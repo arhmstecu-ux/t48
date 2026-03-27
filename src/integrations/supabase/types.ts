@@ -131,6 +131,54 @@ export type Database = {
         }
         Relationships: []
       }
+      livestream_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          profile_photo: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          profile_photo?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          profile_photo?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      livestream_viewers: {
+        Row: {
+          id: string
+          last_seen: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          id?: string
+          last_seen?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          id?: string
+          last_seen?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

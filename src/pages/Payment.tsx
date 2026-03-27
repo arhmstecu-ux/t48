@@ -27,18 +27,26 @@ const Payment = () => {
 
   const discountedTotal = Math.round(total * (1 - discount / 100));
 
+  const redirectToWhatsApp = () => {
+    const itemNames = items.map(i => `${i.product.name} x${i.quantity}`).join(', ');
+    const methodLabel = payMethod === 'qris' ? 'QRIS' : payMethod === 'dana' ? 'DANA' : 'GoPay';
+    const username = profile?.username || 'User';
+    const voucherText = appliedVoucher ? ` (Voucher: ${appliedVoucher.code}, diskon ${appliedVoucher.discount_percent}%)` : '';
+    const message = `Halo admin, saya ${username} sudah melakukan pembayaran ${methodLabel} sebesar ${formatPrice(discountedTotal)} untuk: ${itemNames}.${voucherText} Mohon konfirmasi pembelian saya. Terima kasih!`;
+    const waUrl = `https://wa.me/6282135963767?text=${encodeURIComponent(message)}`;
+    // Try multiple methods for maximum compatibility
+    const newWindow = window.open(waUrl, '_blank');
+    if (!newWindow || newWindow.closed) {
+      window.location.href = waUrl;
+    }
+  };
+
   // Auto redirect to WhatsApp after animation
   useEffect(() => {
     if (!showSuccess) return;
     const timer = setTimeout(() => {
-      const itemNames = items.map(i => `${i.product.name} x${i.quantity}`).join(', ');
-      const methodLabel = payMethod === 'qris' ? 'QRIS' : payMethod === 'dana' ? 'DANA' : 'GoPay';
-      const username = profile?.username || 'User';
-      const voucherText = appliedVoucher ? ` (Voucher: ${appliedVoucher.code}, diskon ${appliedVoucher.discount_percent}%)` : '';
-      const message = `Halo admin, saya ${username} sudah melakukan pembayaran ${methodLabel} sebesar ${formatPrice(discountedTotal)} untuk: ${itemNames}.${voucherText} Mohon konfirmasi pembelian saya. Terima kasih!`;
-      // Use location.href for reliable redirect to WhatsApp
-      window.location.href = `https://wa.me/6282135963767?text=${encodeURIComponent(message)}`;
-    }, 2500);
+      redirectToWhatsApp();
+    }, 2000);
     return () => clearTimeout(timer);
   }, [showSuccess]);
 

@@ -351,9 +351,9 @@ const LiveStream = () => {
                   <iframe
                     src={getYouTubeEmbedUrl(liveUrl)}
                     className="absolute inset-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    referrerPolicy="no-referrer"
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
                     style={{ border: 'none' }}
                   />
                   {/* Full top overlay - blocks YouTube logo, title, share */}

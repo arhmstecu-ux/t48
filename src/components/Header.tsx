@@ -39,10 +39,10 @@ const Header = () => {
         <div className="flex items-center gap-1">
           {user ? (
             <>
-              <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary transition-colors">
+              <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary hover:scale-110 transition-all duration-200">
                 <ShoppingCart className="w-5 h-5 text-foreground" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full gradient-primary text-primary-foreground text-xs flex items-center justify-center font-bold">{itemCount}</span>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full gradient-primary text-primary-foreground text-xs flex items-center justify-center font-bold animate-bounce" style={{ animationDuration: '2s' }}>{itemCount}</span>
                 )}
               </Link>
               <Link to="/my-page" className="p-2 rounded-lg hover:bg-secondary transition-colors">

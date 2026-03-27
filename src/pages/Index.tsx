@@ -30,10 +30,15 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8">
-          <div className="text-center mb-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+            className="text-center mb-6"
+          >
             <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-3">T48ID Store</h1>
             <p className="text-muted-foreground text-lg">Order Show & PM JKT48 — Produk resmi untuk fans sejati!</p>
-          </div>
+          </motion.div>
 
           {/* Image Slider */}
           <div className="max-w-3xl mx-auto">
@@ -146,30 +151,21 @@ const Index = () => {
           </motion.div>
 
           <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-6 gap-3">
-            <Link to="/show" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <span className="font-bold text-foreground text-sm">Katalog</span>
-            </Link>
-            <Link to="/replay" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <Play className="w-8 h-8 mx-auto mb-2 text-accent" />
-              <span className="font-bold text-foreground text-sm">Replay</span>
-            </Link>
-            <Link to="/announcements" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <Megaphone className="w-8 h-8 mx-auto mb-2 text-warning" />
-              <span className="font-bold text-foreground text-sm">Pengumuman</span>
-            </Link>
-            <Link to="/ranking" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-success" />
-              <span className="font-bold text-foreground text-sm">Ranking</span>
-            </Link>
-            <Link to="/spin" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <Sparkles className="w-8 h-8 mx-auto mb-2 text-warning" />
-              <span className="font-bold text-foreground text-sm">Spin</span>
-            </Link>
-            <Link to="/live" className="glass-card rounded-2xl p-5 text-center hover:scale-[1.02] transition-transform">
-              <Radio className="w-8 h-8 mx-auto mb-2 text-destructive" />
-              <span className="font-bold text-foreground text-sm">Live</span>
-            </Link>
+            {[
+              { to: '/show', icon: ShoppingBag, label: 'Katalog', color: 'text-primary', delay: 0.35 },
+              { to: '/replay', icon: Play, label: 'Replay', color: 'text-accent', delay: 0.4 },
+              { to: '/announcements', icon: Megaphone, label: 'Pengumuman', color: 'text-warning', delay: 0.45 },
+              { to: '/ranking', icon: Trophy, label: 'Ranking', color: 'text-success', delay: 0.5 },
+              { to: '/spin', icon: Sparkles, label: 'Spin', color: 'text-warning', delay: 0.55 },
+              { to: '/live', icon: Radio, label: 'Live', color: 'text-destructive', delay: 0.6 },
+            ].map(item => (
+              <motion.div key={item.to} initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: item.delay, type: 'spring', stiffness: 200 }}>
+                <Link to={item.to} className="glass-card rounded-2xl p-5 text-center block hover:scale-105 hover:-translate-y-1 transition-all duration-300">
+                  <item.icon className={`w-8 h-8 mx-auto mb-2 ${item.color} animate-float`} style={{ animationDelay: `${item.delay}s` }} />
+                  <span className="font-bold text-foreground text-sm">{item.label}</span>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </main>
       </div>

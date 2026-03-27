@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 30% 97%;
+    --foreground: 210 50% 10%;
+
+    --card: 210 30% 99%;
+    --card-foreground: 210 50% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 10%;
+
+    --primary: 200 80% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 30% 92%;
+    --secondary-foreground: 210 50% 15%;
+
+    --muted: 200 20% 94%;
+    --muted-foreground: 210 15% 45%;
+
+    --accent: 350 65% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 25% 88%;
+    --input: 200 25% 88%;
+    --ring: 200 80% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 200 40% 96%;
+    --sidebar-foreground: 210 30% 25%;
+    --sidebar-primary: 200 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 30% 92%;
+    --sidebar-accent-foreground: 210 50% 15%;
+    --sidebar-border: 200 25% 88%;
+    --sidebar-ring: 200 80% 50%;
+
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 90% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --crimson: 350 65% 35%;
+    --crimson-foreground: 0 0% 100%;
+    --crimson-light: 350 60% 92%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(200 80% 50%), hsl(350 65% 38%));
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(200 80% 50% / 0.1), hsl(350 65% 35% / 0.08));
+  }
+
+  .gradient-crimson {
+    background: linear-gradient(135deg, hsl(350 65% 35%), hsl(350 50% 28%));
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(200 80% 42%), hsl(350 65% 38%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-crimson {
+    background: linear-gradient(135deg, hsl(350 65% 38%), hsl(350 50% 28%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* Smooth global transitions */
+* {
+  scroll-behavior: smooth;
+}
+
+button, a, input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+/* Page transition */
+main {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

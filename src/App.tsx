@@ -27,6 +27,36 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const SecurityGuard = () => {
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const blockedCombo =
+        key === "f12" ||
+        (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(key)) ||
+        (e.ctrlKey && key === "u");
+
+      if (blockedCombo) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("contextmenu", onContextMenu);
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("contextmenu", onContextMenu);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  return null;
+};
+
 const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   const { isOwner, loading: authLoading } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
@@ -67,6 +97,7 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SecurityGuard />
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>

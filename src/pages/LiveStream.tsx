@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +39,26 @@ const LiveStream = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const registerViewerHeartbeat = useCallback(async () => {
+    if (!user || !profile) return;
+
+    await supabase.from('livestream_viewers' as any).upsert({
+      user_id: user.id,
+      username: profile.username,
+      last_seen: new Date().toISOString(),
+    } as any, { onConflict: 'user_id' });
+  }, [user, profile]);
+
+  const loadViewers = useCallback(async () => {
+    const cutoff = new Date(Date.now() - 30000).toISOString();
+    const { count } = await supabase
+      .from('livestream_viewers' as any)
+      .select('*', { count: 'exact', head: true })
+      .gte('last_seen', cutoff);
+
+    setViewerCount(count || 0);
+  }, []);
+
   // Load settings from app_settings
   useEffect(() => {
     const loadSettings = async () => {
@@ -69,44 +89,36 @@ const LiveStream = () => {
   useEffect(() => {
     if (!user || !profile || !liveActive) return;
 
-    const registerViewer = async () => {
-      await supabase.from('livestream_viewers' as any).upsert({
-        user_id: user.id,
-        username: profile.username,
-        last_seen: new Date().toISOString(),
-      } as any, { onConflict: 'user_id' });
-    };
-
-    registerViewer();
-    heartbeatRef.current = setInterval(registerViewer, 15000);
+    void registerViewerHeartbeat();
+    heartbeatRef.current = setInterval(() => {
+      void registerViewerHeartbeat();
+    }, 10000);
 
     return () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       // Remove viewer on unmount
-      supabase.from('livestream_viewers' as any).delete().eq('user_id', user.id);
+      void supabase.from('livestream_viewers' as any).delete().eq('user_id', user.id);
     };
-  }, [user, profile, liveActive]);
+  }, [user, profile, liveActive, registerViewerHeartbeat]);
 
   // Count viewers realtime
   useEffect(() => {
-    const loadViewers = async () => {
-      // Count viewers seen in last 30 seconds
-      const cutoff = new Date(Date.now() - 30000).toISOString();
-      const { count } = await supabase.from('livestream_viewers' as any).select('*', { count: 'exact', head: true }).gte('last_seen', cutoff);
-      setViewerCount(count || 0);
-    };
-    loadViewers();
-    const interval = setInterval(loadViewers, 10000);
+    void loadViewers();
+    const interval = setInterval(() => {
+      void loadViewers();
+    }, 5000);
 
     const ch = supabase.channel('livestream-viewers')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_viewers' }, () => loadViewers())
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_viewers' }, () => {
+        void loadViewers();
+      })
       .subscribe();
 
     return () => {
       clearInterval(interval);
       supabase.removeChannel(ch);
     };
-  }, []);
+  }, [loadViewers]);
 
   // Load comments
   useEffect(() => {
@@ -143,37 +155,85 @@ const LiveStream = () => {
     return () => document.removeEventListener('fullscreenchange', handleFSChange);
   }, []);
 
-  const getYouTubeEmbedUrl = (url: string) => {
-    if (!url) return '';
-    let videoId = '';
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\s?]+)/,
-      /youtube\.com\/embed\/([^?&]+)/,
-    ];
-    for (const p of patterns) {
-      const m = url.match(p);
-      if (m) { videoId = m[1]; break; }
+  const getYouTubeEmbedUrl = (rawUrl: string) => {
+    const input = rawUrl.trim();
+    if (!input) return '';
+
+    const baseParams = 'autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
+
+    if (/youtube\.com\/embed\/live_stream/i.test(input)) {
+      return `${input}${input.includes('?') ? '&' : '?'}${baseParams}`;
     }
-    if (!videoId) return url;
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&origin=${window.location.origin}`;
+
+    const extractVideoId = (url: string): string | null => {
+      if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+
+      try {
+        const parsed = new URL(url);
+        const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+
+        if (host === 'youtu.be') {
+          return parsed.pathname.split('/').filter(Boolean)[0] || null;
+        }
+
+        if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+          if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
+          if (parsed.pathname.startsWith('/live/')) return parsed.pathname.split('/live/')[1]?.split('/')[0] || null;
+          if (parsed.pathname.startsWith('/shorts/')) return parsed.pathname.split('/shorts/')[1]?.split('/')[0] || null;
+          if (parsed.pathname.startsWith('/embed/')) return parsed.pathname.split('/embed/')[1]?.split('/')[0] || null;
+        }
+      } catch {
+        // fallback regex below
+      }
+
+      const fallback = url.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+      return fallback?.[1] || null;
+    };
+
+    const videoId = extractVideoId(input);
+    if (!videoId) return '';
+
+    return `https://www.youtube-nocookie.com/embed/${videoId}?${baseParams}`;
   };
+
+  const embedUrl = useMemo(() => getYouTubeEmbedUrl(liveUrl), [liveUrl]);
 
   const handleSendComment = async () => {
     if (!newComment.trim() || sending || !user || !profile) return;
     const commentText = newComment.trim();
+    const tempId = `temp-${Date.now()}`;
+
+    setComments(prev => [
+      ...prev,
+      {
+        id: tempId,
+        user_id: user.id,
+        username: profile.username,
+        profile_photo: profile.profile_photo,
+        content: commentText,
+        created_at: new Date().toISOString(),
+      },
+    ]);
     setNewComment('');
     setSending(true);
 
-    const { error } = await supabase.from('livestream_comments' as any).insert({
+    const { data, error } = await supabase.from('livestream_comments' as any).insert({
       user_id: user.id,
       username: profile.username,
       profile_photo: profile.profile_photo,
       content: commentText,
-    } as any);
+    } as any).select('*').single();
     
     if (error) {
+      setComments(prev => prev.filter(c => c.id !== tempId));
       toast.error('Gagal mengirim komentar');
       setNewComment(commentText);
+    } else if (data) {
+      setComments(prev => {
+        const withoutTemp = prev.filter(c => c.id !== tempId);
+        if (withoutTemp.some(c => c.id === data.id)) return withoutTemp;
+        return [...withoutTemp, data as LiveComment];
+      });
     }
     setSending(false);
   };
@@ -216,22 +276,33 @@ const LiveStream = () => {
   };
 
   const handleClearComments = async () => {
-    const { data } = await supabase.from('livestream_comments' as any).select('id');
-    if (data && data.length > 0) {
-      for (const c of data as any[]) {
-        await supabase.from('livestream_comments' as any).delete().eq('id', c.id);
-      }
-    }
+    await supabase.from('livestream_comments' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     setComments([]);
     toast.success('Semua komentar dihapus!');
   };
 
   const toggleFullscreen = async () => {
     if (!videoContainerRef.current) return;
-    if (!document.fullscreenElement) {
-      await videoContainerRef.current.requestFullscreen();
+
+    const el = videoContainerRef.current as HTMLDivElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      msExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+    };
+
+    if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
     } else {
-      await document.exitFullscreen();
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+      else if (doc.msExitFullscreen) await doc.msExitFullscreen();
     }
   };
 
@@ -347,9 +418,10 @@ const LiveStream = () => {
           <div className="lg:col-span-2">
             <div ref={videoContainerRef} className={`relative w-full rounded-2xl overflow-hidden bg-black border border-border ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`} style={isFullscreen ? {} : { paddingBottom: '56.25%' }}>
               {liveUrl ? (
+                embedUrl ? (
                 <>
                   <iframe
-                    src={getYouTubeEmbedUrl(liveUrl)}
+                    src={embedUrl}
                     className="absolute inset-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
@@ -357,12 +429,11 @@ const LiveStream = () => {
                     style={{ border: 'none' }}
                   />
                   {/* Full top overlay - blocks YouTube logo, title, share */}
-                  <div className="absolute top-0 left-0 right-0 h-16 z-10 cursor-default"
-                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }}
+                  <div className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none"
                     style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)' }}>
                     {/* Fullscreen button */}
                     <button onClick={toggleFullscreen}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70 transition z-20">
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 text-foreground hover:bg-background/90 transition pointer-events-auto z-20">
                       {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                     </button>
                   </div>
@@ -377,6 +448,14 @@ const LiveStream = () => {
                   <div className="absolute bottom-0 left-0 w-48 h-12 z-10 cursor-default"
                     onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
                 </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center px-4">
+                    <div className="text-center">
+                      <p className="text-destructive text-sm font-semibold">URL livestream YouTube tidak valid</p>
+                      <p className="text-xs text-muted-foreground mt-1">Gunakan link format watch, youtu.be, live, shorts, atau embed.</p>
+                    </div>
+                  </div>
+                )
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">

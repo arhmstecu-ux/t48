@@ -151,20 +151,56 @@ const LiveStream = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
+  const lockLandscape = useCallback(async () => {
+    const orientation = (screen as Screen & {
+      orientation?: { lock?: (mode: 'landscape' | 'portrait') => Promise<void>; unlock?: () => void };
+    }).orientation;
+
+    if (orientation?.lock) {
+      try {
+        await orientation.lock('landscape');
+      } catch {
+        // ignore: not supported on some devices
+      }
+    }
+  }, []);
+
+  const unlockOrientation = useCallback(() => {
+    const orientation = (screen as Screen & {
+      orientation?: { unlock?: () => void };
+    }).orientation;
+
+    if (orientation?.unlock) {
+      try {
+        orientation.unlock();
+      } catch {
+        // ignore: not supported on some devices
+      }
+    }
+  }, []);
+
   // Fullscreen handling
   useEffect(() => {
     const handleFSChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFs = !!document.fullscreenElement || !!(document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement;
+      setIsFullscreen(isFs);
+      if (!isFs) unlockOrientation();
     };
+
     document.addEventListener('fullscreenchange', handleFSChange);
-    return () => document.removeEventListener('fullscreenchange', handleFSChange);
-  }, []);
+    document.addEventListener('webkitfullscreenchange', handleFSChange as EventListener);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFSChange);
+      document.removeEventListener('webkitfullscreenchange', handleFSChange as EventListener);
+    };
+  }, [unlockOrientation]);
 
   const getYouTubeEmbedUrl = (rawUrl: string) => {
     const input = rawUrl.trim();
     if (!input) return '';
 
-    const baseParams = 'autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
+    const baseParams = 'autoplay=1&mute=0&controls=0&fs=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
 
     const withScheme = /^https?:\/\//i.test(input) ? input : `https://${input}`;
 
@@ -335,7 +371,10 @@ const LiveStream = () => {
       if (el.requestFullscreen) await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
       else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+
+      await lockLandscape();
     } else {
+      unlockOrientation();
       if (document.exitFullscreen) await document.exitFullscreen();
       else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
       else if (doc.msExitFullscreen) await doc.msExitFullscreen();
@@ -460,29 +499,36 @@ const LiveStream = () => {
                     src={embedUrl}
                     className="absolute inset-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
                     style={{ border: 'none' }}
                   />
-                  {/* Full top overlay - blocks YouTube logo, title, share */}
-                  <div className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none"
-                    style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)' }}>
-                    {/* Fullscreen button */}
-                    <button onClick={toggleFullscreen}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 text-foreground hover:bg-background/90 transition pointer-events-auto z-20">
-                      {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {/* Bottom overlay - blocks "Watch on YouTube" link */}
-                  <div className="absolute bottom-0 left-0 right-0 h-14 z-10 cursor-default"
+                  {/* Interaction blocker: prevent all clicks to YouTube layer */}
+                  <div
+                    className="absolute inset-0 z-10 cursor-default"
                     onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onMouseDownCapture={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onDoubleClickCapture={e => { e.preventDefault(); e.stopPropagation(); }}
+                  />
+
+                  {/* Visual fade overlay */}
+                  <div className="absolute top-0 left-0 right-0 h-16 z-20 pointer-events-none"
+                    style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-14 z-20 pointer-events-none"
                     style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
-                  {/* Right side overlay - blocks YouTube watermark */}
-                  <div className="absolute top-0 right-0 w-24 h-20 z-10 cursor-default"
+
+                  {/* Extra blockers for YouTube branding hotspots */}
+                  <div className="absolute top-0 left-0 w-2/3 h-20 z-30 cursor-default"
                     onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
-                  {/* Left side YouTube logo area */}
-                  <div className="absolute bottom-0 left-0 w-48 h-12 z-10 cursor-default"
+                  <div className="absolute top-0 right-0 w-28 h-20 z-30 cursor-default"
                     onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
+                  <div className="absolute bottom-0 left-0 w-56 h-14 z-30 cursor-default"
+                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
+
+                  {/* Custom fullscreen button (web fullscreen only) */}
+                  <button onClick={toggleFullscreen}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 text-foreground hover:bg-background/90 transition z-40">
+                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                  </button>
                 </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center px-4">

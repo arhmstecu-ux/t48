@@ -27,18 +27,18 @@ const Payment = () => {
 
   const discountedTotal = Math.round(total * (1 - discount / 100));
 
-  const redirectToWhatsApp = () => {
+  const getWhatsAppUrl = () => {
     const itemNames = items.map(i => `${i.product.name} x${i.quantity}`).join(', ');
     const methodLabel = payMethod === 'qris' ? 'QRIS' : payMethod === 'dana' ? 'DANA' : 'GoPay';
     const username = profile?.username || 'User';
     const voucherText = appliedVoucher ? ` (Voucher: ${appliedVoucher.code}, diskon ${appliedVoucher.discount_percent}%)` : '';
     const message = `Halo admin, saya ${username} sudah melakukan pembayaran ${methodLabel} sebesar ${formatPrice(discountedTotal)} untuk: ${itemNames}.${voucherText} Mohon konfirmasi pembelian saya. Terima kasih!`;
-    const waUrl = `https://wa.me/6282135963767?text=${encodeURIComponent(message)}`;
-    // Try multiple methods for maximum compatibility
-    const newWindow = window.open(waUrl, '_blank');
-    if (!newWindow || newWindow.closed) {
-      window.location.href = waUrl;
-    }
+    return `https://wa.me/6282135963767?text=${encodeURIComponent(message)}`;
+  };
+
+  const redirectToWhatsApp = () => {
+    const waUrl = getWhatsAppUrl();
+    window.location.href = waUrl;
   };
 
   // Auto redirect to WhatsApp after animation
@@ -164,6 +164,16 @@ const Payment = () => {
               className="w-full py-3 rounded-xl gradient-primary text-primary-foreground font-bold text-lg hover:opacity-90 transition-all disabled:opacity-50">
               {processing ? 'Memproses...' : 'Sudah Bayar ✓'}
             </button>
+
+            {showSuccess && (
+              <button
+                onClick={redirectToWhatsApp}
+                className="w-full mt-3 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold text-base hover:bg-secondary/80 transition-all"
+              >
+                Hubungi Admin untuk Konfirmasi
+              </button>
+            )}
+
             <p className="text-xs text-muted-foreground mt-4">
               ⚠️ Setelah konfirmasi, kamu akan <strong>otomatis diarahkan ke WhatsApp admin</strong> untuk verifikasi pembayaran.
             </p>

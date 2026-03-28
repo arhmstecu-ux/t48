@@ -20,5 +20,14 @@ export const memberPunishments: MemberPunishment[] = [
 
 export const getActivePunishments = (): MemberPunishment[] => {
   const now = new Date();
-  return memberPunishments.filter(p => new Date(p.endDate) > now);
+  return memberPunishments
+    .filter((p) => {
+      const start = new Date(p.startDate);
+      const end = new Date(p.endDate);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
+
+      return start <= now && end > now;
+    })
+    .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
 };

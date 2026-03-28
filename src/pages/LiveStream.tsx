@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize } from 'lucide-react';
+import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
@@ -35,9 +35,42 @@ const LiveStream = () => {
   const [viewerCount, setViewerCount] = useState(0);
   const [maxViewers, setMaxViewers] = useState(750);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const postPlayerCommand = useCallback((func: string, args: unknown[] = []) => {
+    const iframeWindow = iframeRef.current?.contentWindow;
+    if (!iframeWindow) return;
+
+    iframeWindow.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      '*',
+    );
+  }, []);
+
+  const handlePlayerLoad = useCallback(() => {
+    setIsMuted(true);
+    [120, 380, 800].forEach((delay) => {
+      window.setTimeout(() => {
+        postPlayerCommand('mute');
+      }, delay);
+    });
+  }, [postPlayerCommand]);
+
+  const toggleMute = useCallback(() => {
+    if (isMuted) {
+      postPlayerCommand('unMute');
+      postPlayerCommand('setVolume', [100]);
+      setIsMuted(false);
+      return;
+    }
+
+    postPlayerCommand('mute');
+    setIsMuted(true);
+  }, [isMuted, postPlayerCommand]);
 
   const fallbackUsername = useMemo(
     () => profile?.username || user?.email?.split('@')[0] || 'User',
@@ -200,7 +233,22 @@ const LiveStream = () => {
     const input = rawUrl.trim();
     if (!input) return '';
 
-    const baseParams = 'autoplay=1&mute=0&controls=0&fs=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
+    const origin = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : '';
+    const baseParams = [
+      'autoplay=1',
+      'mute=1',
+      'controls=0',
+      'fs=0',
+      'modestbranding=1',
+      'rel=0',
+      'iv_load_policy=3',
+      'disablekb=1',
+      'playsinline=1',
+      'enablejsapi=1',
+      origin ? `origin=${origin}` : '',
+    ]
+      .filter(Boolean)
+      .join('&');
 
     const withScheme = /^https?:\/\//i.test(input) ? input : `https://${input}`;
 
@@ -218,7 +266,7 @@ const LiveStream = () => {
         const channelId = channelIdFromPath || channelIdFromQuery;
 
         if (channelId && channelId.startsWith('UC')) {
-          return `https://www.youtube-nocookie.com/embed/live_stream?channel=${channelId}&${baseParams}`;
+          return `https://www.youtube.com/embed/live_stream?channel=${channelId}&${baseParams}`;
         }
       }
     } catch {
@@ -253,7 +301,7 @@ const LiveStream = () => {
     const videoId = extractVideoId(withScheme);
     if (!videoId) return '';
 
-    return `https://www.youtube-nocookie.com/embed/${videoId}?${baseParams}`;
+    return `https://www.youtube.com/embed/${videoId}?${baseParams}`;
   };
 
   const embedUrl = useMemo(() => getYouTubeEmbedUrl(liveUrl), [liveUrl]);
@@ -496,39 +544,37 @@ const LiveStream = () => {
                 embedUrl ? (
                 <>
                   <iframe
+                    ref={iframeRef}
                     src={embedUrl}
-                    className="absolute inset-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    onLoad={handlePlayerLoad}
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
                     style={{ border: 'none' }}
                   />
-                  {/* Interaction blocker: prevent all clicks to YouTube layer */}
-                  <div
-                    className="absolute inset-0 z-10 cursor-default"
-                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }}
-                    onMouseDownCapture={e => { e.preventDefault(); e.stopPropagation(); }}
-                    onDoubleClickCapture={e => { e.preventDefault(); e.stopPropagation(); }}
-                  />
+                  <div className="absolute inset-0 z-10 pointer-events-none" />
 
-                  {/* Visual fade overlay */}
-                  <div className="absolute top-0 left-0 right-0 h-16 z-20 pointer-events-none"
-                    style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
-                  <div className="absolute bottom-0 left-0 right-0 h-14 z-20 pointer-events-none"
-                    style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
+                  <div className="absolute top-0 left-0 right-0 h-16 z-20 pointer-events-none bg-gradient-to-b from-background/80 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-16 z-20 pointer-events-none bg-gradient-to-t from-background/80 to-transparent" />
 
-                  {/* Extra blockers for YouTube branding hotspots */}
-                  <div className="absolute top-0 left-0 w-2/3 h-20 z-30 cursor-default"
-                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
-                  <div className="absolute top-0 right-0 w-28 h-20 z-30 cursor-default"
-                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
-                  <div className="absolute bottom-0 left-0 w-56 h-14 z-30 cursor-default"
-                    onClickCapture={e => { e.preventDefault(); e.stopPropagation(); }} />
+                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
+                    <button
+                      onClick={toggleMute}
+                      className="p-1.5 rounded-lg bg-background/80 text-foreground hover:bg-background transition"
+                      aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}
+                    >
+                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
 
-                  {/* Custom fullscreen button (web fullscreen only) */}
-                  <button onClick={toggleFullscreen}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 text-foreground hover:bg-background/90 transition z-40">
-                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                  </button>
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-1.5 rounded-lg bg-background/80 text-foreground hover:bg-background transition"
+                      aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}
+                    >
+                      {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center px-4">

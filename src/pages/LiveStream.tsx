@@ -39,15 +39,20 @@ const LiveStream = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const fallbackUsername = useMemo(
+    () => profile?.username || user?.email?.split('@')[0] || 'User',
+    [profile?.username, user?.email],
+  );
+
   const registerViewerHeartbeat = useCallback(async () => {
-    if (!user || !profile) return;
+    if (!user) return;
 
     await supabase.from('livestream_viewers' as any).upsert({
       user_id: user.id,
-      username: profile.username,
+      username: fallbackUsername,
       last_seen: new Date().toISOString(),
     } as any, { onConflict: 'user_id' });
-  }, [user, profile]);
+  }, [user, fallbackUsername]);
 
   const loadViewers = useCallback(async () => {
     const cutoff = new Date(Date.now() - 30000).toISOString();
@@ -87,7 +92,7 @@ const LiveStream = () => {
 
   // Viewer tracking - heartbeat
   useEffect(() => {
-    if (!user || !profile || !liveActive) return;
+    if (!user || !liveActive) return;
 
     void registerViewerHeartbeat();
     heartbeatRef.current = setInterval(() => {
@@ -99,7 +104,7 @@ const LiveStream = () => {
       // Remove viewer on unmount
       void supabase.from('livestream_viewers' as any).delete().eq('user_id', user.id);
     };
-  }, [user, profile, liveActive, registerViewerHeartbeat]);
+  }, [user, liveActive, registerViewerHeartbeat]);
 
   // Count viewers realtime
   useEffect(() => {
@@ -161,8 +166,27 @@ const LiveStream = () => {
 
     const baseParams = 'autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
 
+    const withScheme = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+
     if (/youtube\.com\/embed\/live_stream/i.test(input)) {
       return `${input}${input.includes('?') ? '&' : '?'}${baseParams}`;
+    }
+
+    try {
+      const parsed = new URL(withScheme);
+      const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+
+      if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+        const channelIdFromPath = parsed.pathname.match(/\/channel\/(UC[\w-]+)/)?.[1];
+        const channelIdFromQuery = parsed.searchParams.get('channel');
+        const channelId = channelIdFromPath || channelIdFromQuery;
+
+        if (channelId && channelId.startsWith('UC')) {
+          return `https://www.youtube-nocookie.com/embed/live_stream?channel=${channelId}&${baseParams}`;
+        }
+      }
+    } catch {
+      // ignore channel URL parse errors
     }
 
     const extractVideoId = (url: string): string | null => {
@@ -190,7 +214,7 @@ const LiveStream = () => {
       return fallback?.[1] || null;
     };
 
-    const videoId = extractVideoId(input);
+    const videoId = extractVideoId(withScheme);
     if (!videoId) return '';
 
     return `https://www.youtube-nocookie.com/embed/${videoId}?${baseParams}`;
@@ -199,7 +223,7 @@ const LiveStream = () => {
   const embedUrl = useMemo(() => getYouTubeEmbedUrl(liveUrl), [liveUrl]);
 
   const handleSendComment = async () => {
-    if (!newComment.trim() || sending || !user || !profile) return;
+    if (!newComment.trim() || sending || !user) return;
     const commentText = newComment.trim();
     const tempId = `temp-${Date.now()}`;
 
@@ -208,8 +232,8 @@ const LiveStream = () => {
       {
         id: tempId,
         user_id: user.id,
-        username: profile.username,
-        profile_photo: profile.profile_photo,
+        username: fallbackUsername,
+        profile_photo: profile?.profile_photo ?? null,
         content: commentText,
         created_at: new Date().toISOString(),
       },
@@ -217,25 +241,37 @@ const LiveStream = () => {
     setNewComment('');
     setSending(true);
 
-    const { data, error } = await supabase.from('livestream_comments' as any).insert({
-      user_id: user.id,
-      username: profile.username,
-      profile_photo: profile.profile_photo,
-      content: commentText,
-    } as any).select('*').single();
-    
-    if (error) {
+    try {
+      const result: any = await supabase.from('livestream_comments' as any).insert({
+        user_id: user.id,
+        username: fallbackUsername,
+        profile_photo: profile?.profile_photo ?? null,
+        content: commentText,
+      } as any).select('*').single();
+
+      const { data, error } = result;
+
+      if (error) {
+        setComments(prev => prev.filter(c => c.id !== tempId));
+        toast.error('Gagal mengirim komentar');
+        setNewComment(commentText);
+        return;
+      }
+
+      if (data) {
+        setComments(prev => {
+          const withoutTemp = prev.filter(c => c.id !== tempId);
+          if (withoutTemp.some(c => c.id === data.id)) return withoutTemp;
+          return [...withoutTemp, data as LiveComment];
+        });
+      }
+    } catch {
       setComments(prev => prev.filter(c => c.id !== tempId));
-      toast.error('Gagal mengirim komentar');
+      toast.error('Koneksi chat bermasalah, coba lagi');
       setNewComment(commentText);
-    } else if (data) {
-      setComments(prev => {
-        const withoutTemp = prev.filter(c => c.id !== tempId);
-        if (withoutTemp.some(c => c.id === data.id)) return withoutTemp;
-        return [...withoutTemp, data as LiveComment];
-      });
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   };
 
   const handleDeleteComment = async (id: string) => {

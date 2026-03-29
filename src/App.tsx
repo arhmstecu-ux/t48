@@ -87,7 +87,15 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔧</div>
           <h1 className="text-2xl font-extrabold text-gradient mb-3">Website Ditutup Sementara</h1>
-          <p className="text-muted-foreground whitespace-pre-wrap">{message}</p>
+          <p className="text-muted-foreground whitespace-pre-wrap mb-5">{message}</p>
+          <a
+            href="https://whatsapp.com/channel/0029VbBgutpEKyZFRQ8hK33l"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(142,70%,45%)] text-white font-bold text-sm hover:opacity-90 transition-opacity"
+          >
+            📢 Gabung Saluran WhatsApp
+          </a>
         </div>
       </div>
     );

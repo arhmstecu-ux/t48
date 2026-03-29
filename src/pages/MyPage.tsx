@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';

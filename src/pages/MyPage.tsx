@@ -20,8 +20,13 @@ const MyPage = () => {
 
   const { data: purchaseItems } = useRealtimeTable<Tables<'purchase_items'>>('purchase_items', undefined, !!user);
 
-  // Wait for auth to load before redirecting
-  if (authLoading) {
+  useEffect(() => {
+    if (!authLoading && (!user || !profile)) {
+      navigate('/login');
+    }
+  }, [authLoading, user, profile, navigate]);
+
+  if (authLoading || !user || !profile) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -31,8 +36,6 @@ const MyPage = () => {
       </div>
     );
   }
-
-  if (!user || !profile) { navigate('/login'); return null; }
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);

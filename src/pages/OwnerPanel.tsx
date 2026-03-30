@@ -530,6 +530,8 @@ const OwnerPanel = () => {
             </div>
           </motion.div>
         )}
+
+        {tab === 'coins' && <CoinPanel />}
       </main>
     </div>
   );

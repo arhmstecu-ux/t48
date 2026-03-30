@@ -539,7 +539,7 @@ const LiveStream = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Video Player - Fully Secured */}
           <div className="lg:col-span-2">
-            <div ref={videoContainerRef} className={`relative w-full rounded-2xl overflow-hidden bg-black border border-border ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`} style={isFullscreen ? {} : { paddingBottom: '56.25%' }}>
+            <div ref={videoContainerRef} className={`relative w-full overflow-hidden bg-black ${isFullscreen ? 'fixed inset-0 z-50' : 'rounded-2xl'}`} style={isFullscreen ? {} : { paddingBottom: '56.25%' }}>
               {liveUrl ? (
                 embedUrl ? (
                 <>
@@ -547,21 +547,26 @@ const LiveStream = () => {
                     ref={iframeRef}
                     src={embedUrl}
                     onLoad={handlePlayerLoad}
-                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    className="absolute w-full pointer-events-none"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
-                    style={{ border: 'none' }}
+                    style={{ border: 'none', top: '-60px', bottom: '-60px', left: 0, right: 0, height: 'calc(100% + 120px)', position: 'absolute' }}
                   />
-                  <div className="absolute inset-0 z-10 pointer-events-none" />
+                  {/* Block all clicks on video */}
+                  <div className="absolute inset-0 z-10" />
 
-                  <div className="absolute top-0 left-0 right-0 h-16 z-20 pointer-events-none bg-gradient-to-b from-background/80 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 h-16 z-20 pointer-events-none bg-gradient-to-t from-background/80 to-transparent" />
+                  {/* Top & bottom black bars to hide YouTube UI */}
+                  <div className="absolute top-0 left-0 right-0 h-14 z-20 bg-black" />
+                  <div className="absolute bottom-0 left-0 right-0 h-14 z-20 bg-black" />
+
+                  {/* @t48id watermark */}
+                  <div className="absolute bottom-16 left-3 z-30 text-white/30 text-xs font-bold select-none pointer-events-none">@t48id</div>
 
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
                     <button
                       onClick={toggleMute}
-                      className="p-1.5 rounded-lg bg-background/80 text-foreground hover:bg-background transition"
+                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition"
                       aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}
                     >
                       {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -569,7 +574,7 @@ const LiveStream = () => {
 
                     <button
                       onClick={toggleFullscreen}
-                      className="p-1.5 rounded-lg bg-background/80 text-foreground hover:bg-background transition"
+                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition"
                       aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}
                     >
                       {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}

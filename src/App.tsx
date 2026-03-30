@@ -22,6 +22,7 @@ import AdminLogin from "./pages/AdminLogin";
 import GroupChat from "./pages/GroupChat";
 import SpinWheel from "./pages/SpinWheel";
 import LiveStream from "./pages/LiveStream";
+import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 

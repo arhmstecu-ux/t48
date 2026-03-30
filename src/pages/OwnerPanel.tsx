@@ -205,6 +205,7 @@ const OwnerPanel = () => {
     { key: 'slider' as const, label: 'Slider' },
     { key: 'prizes' as const, label: 'Spin' },
     { key: 'spintransfer' as const, label: 'Transfer Spin' },
+    { key: 'coins' as const, label: '🪙 Koin' },
     { key: 'live' as const, label: 'Live' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },

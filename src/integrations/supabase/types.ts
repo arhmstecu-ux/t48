@@ -83,6 +83,87 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_balances: {
+        Row: {
+          balance: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coin_topup_requests: {
+        Row: {
+          code: string
+          coin_amount: number
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          price: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          coin_amount: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          price: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          coin_amount?: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          price?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           id: string

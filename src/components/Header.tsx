@@ -45,6 +45,9 @@ const Header = () => {
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full gradient-primary text-primary-foreground text-xs flex items-center justify-center font-bold animate-bounce" style={{ animationDuration: '2s' }}>{itemCount}</span>
                 )}
               </Link>
+              <Link to="/coin-topup" className="p-2 rounded-lg hover:bg-secondary hover:scale-110 transition-all duration-200">
+                <Coins className="w-5 h-5 text-warning" />
+              </Link>
               <Link to="/my-page" className="p-2 rounded-lg hover:bg-secondary transition-colors">
                 <User className="w-5 h-5 text-foreground" />
               </Link>

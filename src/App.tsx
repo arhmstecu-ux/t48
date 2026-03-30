@@ -22,6 +22,7 @@ import AdminLogin from "./pages/AdminLogin";
 import GroupChat from "./pages/GroupChat";
 import SpinWheel from "./pages/SpinWheel";
 import LiveStream from "./pages/LiveStream";
+import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -129,9 +130,12 @@ const App = () => (
                 <Route path="/group-chat" element={<GroupChat />} />
                 <Route path="/spin" element={<SpinWheel />} />
                 <Route path="/live" element={<LiveStream />} />
+                <Route path="/coin-topup" element={<CoinTopup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              {/* @t48id watermark footer */}
+              <div className="w-full text-center py-3 text-xs text-muted-foreground/50 font-medium select-none">@t48id</div>
             </MaintenanceGuard>
           </CartProvider>
         </AuthProvider>

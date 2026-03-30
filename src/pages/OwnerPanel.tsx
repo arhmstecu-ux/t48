@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import type { Tables } from '@/integrations/supabase/types';
-import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon } from 'lucide-react';
+import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon, Coins } from 'lucide-react';
+import CoinPanel from '@/components/CoinPanel';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -17,7 +18,7 @@ const SLIDER_KEYS = ['home_slider_1', 'home_slider_2', 'home_slider_3', 'home_sl
 const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins'>('products');
   const [newProduct, setNewProduct] = useState({ name: '', price: 0, description: '', category: 'Show', image: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
@@ -204,6 +205,7 @@ const OwnerPanel = () => {
     { key: 'slider' as const, label: 'Slider' },
     { key: 'prizes' as const, label: 'Spin' },
     { key: 'spintransfer' as const, label: 'Transfer Spin' },
+    { key: 'coins' as const, label: '🪙 Koin' },
     { key: 'live' as const, label: 'Live' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },
@@ -528,6 +530,8 @@ const OwnerPanel = () => {
             </div>
           </motion.div>
         )}
+
+        {tab === 'coins' && <CoinPanel />}
       </main>
     </div>
   );

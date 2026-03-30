@@ -547,21 +547,21 @@ const LiveStream = () => {
                     ref={iframeRef}
                     src={embedUrl}
                     onLoad={handlePlayerLoad}
-                    className="absolute w-full pointer-events-none"
+                    className="absolute inset-0 w-full h-full pointer-events-none"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
-                    style={{ border: 'none', top: '-60px', bottom: '-60px', left: 0, right: 0, height: 'calc(100% + 120px)', position: 'absolute' }}
+                    style={{ border: 'none' }}
                   />
                   {/* Block all clicks on video */}
                   <div className="absolute inset-0 z-10" />
 
-                  {/* Top & bottom black bars to hide YouTube UI */}
-                  <div className="absolute top-0 left-0 right-0 h-14 z-20 bg-black" />
-                  <div className="absolute bottom-0 left-0 right-0 h-14 z-20 bg-black" />
+                  {/* Transparent gradient overlays to soften YouTube UI edges */}
+                  <div className="absolute top-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
 
                   {/* @t48id watermark */}
-                  <div className="absolute bottom-16 left-3 z-30 text-white/30 text-xs font-bold select-none pointer-events-none">@t48id</div>
+                  <div className="absolute bottom-14 left-3 z-30 text-white/40 text-xs font-bold select-none pointer-events-none">@t48id</div>
 
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
                     <button

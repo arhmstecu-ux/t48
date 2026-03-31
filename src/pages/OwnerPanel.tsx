@@ -19,7 +19,7 @@ const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins'>('products');
-  const [newProduct, setNewProduct] = useState({ name: '', price: 0, description: '', category: 'Show', image: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState('');
@@ -95,8 +95,8 @@ const OwnerPanel = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const handleAddProduct = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('products').insert({ name: newProduct.name, price: newProduct.price, description: newProduct.description, category: newProduct.category, image: newProduct.image }); if (error) { toast.error('Gagal'); return; } setNewProduct({ name: '', price: 0, description: '', category: 'Show', image: '' }); setShowAdd(false); toast.success('Produk ditambahkan!'); };
-  const handleDeleteProduct = async (id: string) => { await supabase.from('products').delete().eq('id', id); toast.success('Produk dihapus!'); };
+  const handleAddProduct = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('products').insert({ name: newProduct.name, price: newProduct.price, description: newProduct.description, category: newProduct.category, image: newProduct.image, coin_price: newProduct.coin_price } as any); if (error) { toast.error('Gagal'); return; } setNewProduct({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' }); setShowAdd(false); toast.success('Produk ditambahkan!'); };
+  const handleDeleteProduct = async (id: string) => { const { error } = await supabase.from('products').delete().eq('id', id); if (error) { toast.error('Gagal menghapus: ' + error.message); return; } toast.success('Produk dihapus!'); };
   const handleBlacklist = async (userId: string, isBlacklisted: boolean) => { await supabase.from('profiles').update({ is_blacklisted: !isBlacklisted }).eq('user_id', userId); toast.success(isBlacklisted ? 'User di-unblock!' : 'User diblokir!'); };
   const handleAddVideo = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('replay_videos').insert({ title: newVideo.title, youtube_url: newVideo.youtubeUrl, password: newVideo.password || globalPassword }); if (error) { toast.error('Gagal'); return; } setNewVideo({ title: '', youtubeUrl: '', password: '' }); setShowAddVideo(false); toast.success('Video ditambahkan!'); };
   const handleDeleteVideo = async (id: string) => { await supabase.from('replay_videos').delete().eq('id', id); toast.success('Video dihapus!'); };
@@ -228,7 +228,10 @@ const OwnerPanel = () => {
             {showAdd && (
               <form onSubmit={handleAddProduct} className="glass-card rounded-xl p-6 mb-6 space-y-3">
                 <input placeholder="Nama produk" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <input placeholder="Harga (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Harga QRIS (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
+                  <input placeholder="Harga Koin (0=nonaktif)" type="number" value={newProduct.coin_price || ''} onChange={e => setNewProduct({...newProduct, coin_price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                </div>
                 <input placeholder="Deskripsi" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <input placeholder="Kategori" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
@@ -237,7 +240,13 @@ const OwnerPanel = () => {
             <div className="space-y-3">
               {products.map(p => (
                 <div key={p.id} className="glass-card rounded-xl p-4 flex items-center justify-between">
-                  <div><h3 className="font-semibold text-foreground">{p.name}</h3><span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span></div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{p.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
+                      {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                    </div>
+                  </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition"><Trash2 className="w-4 h-4 text-destructive" /></button>
                 </div>
               ))}

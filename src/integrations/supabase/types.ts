@@ -263,6 +263,7 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          coin_price: number | null
           created_at: string
           description: string | null
           id: string
@@ -273,6 +274,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          coin_price?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -283,6 +285,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          coin_price?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -400,6 +403,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      replay_purchases: {
+        Row: {
+          coin_amount: number
+          created_at: string
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          coin_amount?: number
+          created_at?: string
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          coin_amount?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_purchases_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "replay_videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       replay_videos: {
         Row: {

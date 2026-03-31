@@ -18,6 +18,40 @@ interface LiveComment {
 
 const VIEWER_LIMITS = [150, 230, 400, 600, 750];
 
+const POSITIONS = [
+  { top: '10%', left: '5%' },
+  { top: '60%', left: '70%' },
+  { top: '30%', left: '40%' },
+  { top: '75%', left: '15%' },
+  { top: '15%', left: '75%' },
+  { top: '50%', left: '25%' },
+  { top: '40%', left: '60%' },
+  { top: '20%', left: '50%' },
+  { top: '65%', left: '45%' },
+];
+
+const MovingWatermark = () => {
+  const [posIndex, setPosIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPosIndex(prev => (prev + 1) % POSITIONS.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pos = POSITIONS[posIndex];
+
+  return (
+    <div
+      className="absolute z-30 text-white/30 text-sm font-bold select-none pointer-events-none transition-all duration-1000 ease-in-out"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      @t48id
+    </div>
+  );
+};
+
 const LiveStream = () => {
   const { user, profile, isOwner } = useAuth();
   const [comments, setComments] = useState<LiveComment[]>([]);
@@ -560,8 +594,8 @@ const LiveStream = () => {
                   <div className="absolute top-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }} />
                   <div className="absolute bottom-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
 
-                  {/* @t48id watermark */}
-                  <div className="absolute bottom-14 left-3 z-30 text-white/40 text-xs font-bold select-none pointer-events-none">@t48id</div>
+                  {/* @t48id moving watermark */}
+                  <MovingWatermark />
 
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
                     <button

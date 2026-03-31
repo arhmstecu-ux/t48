@@ -228,7 +228,10 @@ const OwnerPanel = () => {
             {showAdd && (
               <form onSubmit={handleAddProduct} className="glass-card rounded-xl p-6 mb-6 space-y-3">
                 <input placeholder="Nama produk" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <input placeholder="Harga (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Harga QRIS (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
+                  <input placeholder="Harga Koin (0=nonaktif)" type="number" value={newProduct.coin_price || ''} onChange={e => setNewProduct({...newProduct, coin_price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                </div>
                 <input placeholder="Deskripsi" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <input placeholder="Kategori" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
@@ -237,7 +240,13 @@ const OwnerPanel = () => {
             <div className="space-y-3">
               {products.map(p => (
                 <div key={p.id} className="glass-card rounded-xl p-4 flex items-center justify-between">
-                  <div><h3 className="font-semibold text-foreground">{p.name}</h3><span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span></div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{p.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
+                      {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                    </div>
+                  </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition"><Trash2 className="w-4 h-4 text-destructive" /></button>
                 </div>
               ))}

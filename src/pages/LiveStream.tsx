@@ -560,8 +560,8 @@ const LiveStream = () => {
                   <div className="absolute top-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }} />
                   <div className="absolute bottom-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
 
-                  {/* @t48id watermark */}
-                  <div className="absolute bottom-14 left-3 z-30 text-white/40 text-xs font-bold select-none pointer-events-none">@t48id</div>
+                  {/* @t48id moving watermark */}
+                  <MovingWatermark />
 
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
                     <button

@@ -8,7 +8,7 @@ import qrisImg from '@/assets/qris.jpg';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Tag } from 'lucide-react';
+import { Tag, MessageCircle } from 'lucide-react';
 
 const Payment = () => {
   const { total, completePurchase, items } = useCart();
@@ -37,11 +37,9 @@ const Payment = () => {
   };
 
   const redirectToWhatsApp = () => {
-    const waUrl = getWhatsAppUrl();
-    window.location.href = waUrl;
+    window.location.href = getWhatsAppUrl();
   };
 
-  // Auto redirect to WhatsApp after animation
   useEffect(() => {
     if (!showSuccess) return;
     const timer = setTimeout(() => {
@@ -166,12 +164,17 @@ const Payment = () => {
             </button>
 
             {showSuccess && (
-              <button
-                onClick={redirectToWhatsApp}
-                className="w-full mt-3 py-3 rounded-xl bg-secondary text-secondary-foreground font-bold text-base hover:bg-secondary/80 transition-all"
-              >
-                Hubungi Admin untuk Konfirmasi
-              </button>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
+                <div className="glass-card rounded-xl p-4 bg-success/10 border border-success/20">
+                  <p className="text-success font-bold text-lg mb-1">✅ Pembayaran Tercatat!</p>
+                  <p className="text-sm text-muted-foreground">Kirim bukti pembayaran ke admin untuk konfirmasi</p>
+                </div>
+                <button onClick={redirectToWhatsApp}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-base text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: 'hsl(142, 70%, 45%)' }}>
+                  <MessageCircle className="w-5 h-5" /> Hubungi Admin via WhatsApp
+                </button>
+              </motion.div>
             )}
 
             <p className="text-xs text-muted-foreground mt-4">

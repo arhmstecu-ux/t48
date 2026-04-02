@@ -134,6 +134,12 @@ const LiveStream = () => {
 
   // Load settings from app_settings
   useEffect(() => {
+    // Load owner IDs
+    const loadOwners = async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
+    };
+    loadOwners();
     const loadSettings = async () => {
       const { data } = await supabase.from('app_settings').select('*').in('key', [
         'livestream_url', 'livestream_title', 'livestream_description',

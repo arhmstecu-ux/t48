@@ -293,7 +293,7 @@ const GroupChat = () => {
                       </div>
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <p className="text-xs font-semibold text-primary mb-0.5 ml-1">{msg.username}</p>}
+                      {!isMe && <p className={`text-xs font-semibold mb-0.5 ml-1 ${ownerUserIds.has(msg.user_id) ? 'text-destructive' : 'text-primary'}`}>{msg.username}{ownerUserIds.has(msg.user_id) ? ' 👑' : ''}</p>}
                       <div className={`rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-secondary text-secondary-foreground rounded-bl-md'} ${msg._status === 'failed' ? 'opacity-70' : ''} relative`}>
                         {msg.content && <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>}
                         {msg.image_url && (

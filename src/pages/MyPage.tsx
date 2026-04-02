@@ -21,6 +21,25 @@ const MyPage = () => {
 
   const { data: purchaseItems } = useRealtimeTable<Tables<'purchase_items'>>('purchase_items', undefined, !!user);
 
+  const [userLevel, setUserLevel] = useState<{ level: number; total_topup_coins: number } | null>(null);
+  const [levelRewards, setLevelRewards] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase.from('user_levels' as any).select('*').eq('user_id', user.id).single();
+      if (data) setUserLevel(data as any);
+    };
+    load();
+    const ch = supabase.channel('my-level-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'user_levels' }, () => load()).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
+
+  useEffect(() => {
+    const load = async () => { const { data } = await supabase.from('level_rewards' as any).select('*').order('level'); if (data) setLevelRewards(data as any[]); };
+    load();
+  }, []);
+
   useEffect(() => {
     if (!authLoading && (!user || !profile)) {
       navigate('/login');

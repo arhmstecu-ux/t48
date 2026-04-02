@@ -215,6 +215,30 @@ export type Database = {
         }
         Relationships: []
       }
+      level_rewards: {
+        Row: {
+          created_at: string
+          id: string
+          level: number
+          reward_description: string
+          reward_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: number
+          reward_description?: string
+          reward_name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: number
+          reward_description?: string
+          reward_name?: string
+        }
+        Relationships: []
+      }
       livestream_comments: {
         Row: {
           content: string
@@ -592,6 +616,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_levels: {
+        Row: {
+          id: string
+          level: number
+          total_topup_coins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          level?: number
+          total_topup_coins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          level?: number
+          total_topup_coins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

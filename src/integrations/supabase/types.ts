@@ -20,6 +20,7 @@ export type Database = {
           date: string | null
           description: string | null
           id: string
+          image_url: string | null
           title: string
           type: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           date?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           title: string
           type?: string
         }
@@ -36,6 +38,7 @@ export type Database = {
           date?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           title?: string
           type?: string
         }
@@ -257,6 +260,36 @@ export type Database = {
           last_seen?: string | null
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }

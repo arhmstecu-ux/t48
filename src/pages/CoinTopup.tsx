@@ -41,7 +41,6 @@ const CoinTopup = () => {
       const { data } = await supabase.from('coin_balances' as any).select('balance').eq('user_id', user.id).single();
       if (data) setBalance((data as any).balance || 0);
       else {
-        // Create balance if not exists
         await supabase.from('coin_balances' as any).insert({ user_id: user.id, balance: 0 } as any);
         setBalance(0);
       }
@@ -51,6 +50,19 @@ const CoinTopup = () => {
     const ch = supabase.channel('coin-balance-rt')
       .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'coin_balances' }, () => load())
       .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
+
+  // Load user level
+  const [userLevel, setUserLevel] = useState<{ level: number; total_topup_coins: number } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase.from('user_levels' as any).select('*').eq('user_id', user.id).single();
+      if (data) setUserLevel(data as any);
+    };
+    load();
+    const ch = supabase.channel('my-level-topup-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'user_levels' }, () => load()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
 

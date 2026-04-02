@@ -138,6 +138,16 @@ const CoinTopup = () => {
             <span className="text-2xl font-extrabold text-foreground">{balance}</span>
           </div>
           <p className="text-sm text-muted-foreground">Koin kamu</p>
+          {userLevel && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="text-sm font-bold text-warning">⭐ Level {userLevel.level}</span>
+              {userLevel.level < 20 && (
+                <span className="text-xs text-muted-foreground">
+                  (perlu {userLevel.level < 3 ? 4 : userLevel.level < 8 ? 8 : 13} koin topup lagi)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {step === 'select' && (

@@ -98,6 +98,13 @@ const MyPage = () => {
                 <h1 className="text-2xl font-extrabold text-foreground">{profile.username}</h1>
                 <p className="text-sm text-muted-foreground">{profile.email}</p>
                 <p className="text-sm text-muted-foreground">{profile.phone}</p>
+                {userLevel && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Star className="w-4 h-4 text-warning" />
+                    <span className="text-sm font-bold text-warning">Level {userLevel.level}</span>
+                    <span className="text-xs text-muted-foreground">({userLevel.total_topup_coins} koin total topup)</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

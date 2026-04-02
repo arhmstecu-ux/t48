@@ -93,6 +93,14 @@ const OwnerPanel = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Load level rewards
+  useEffect(() => {
+    const loadRewards = async () => { const { data } = await supabase.from('level_rewards' as any).select('*').order('level', { ascending: true }); if (data) setLevelRewards(data as any[]); };
+    loadRewards();
+    const ch = supabase.channel('level-rewards-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'level_rewards' }, () => loadRewards()).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   useEffect(() => {
     const loadPrizes = async () => { const { data } = await supabase.from('spin_prizes' as any).select('*').order('sort_order', { ascending: true }); if (data) setPrizes(data as unknown as Prize[]); };
     loadPrizes();

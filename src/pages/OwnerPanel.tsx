@@ -26,7 +26,7 @@ const OwnerPanel = () => {
   const [newVideo, setNewVideo] = useState({ title: '', youtubeUrl: '', password: '' });
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [globalPassword, setGlobalPassword] = useState('');
-  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', description: '', date: '', type: 'show' as 'show' | 'vc' | 'other' });
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', description: '', date: '', type: 'show' as string, image_url: '' });
   const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
   const [newVoucher, setNewVoucher] = useState({ code: '', discount_percent: 10, max_uses: 100, expires_at: '' });
   const [showAddVoucher, setShowAddVoucher] = useState(false);

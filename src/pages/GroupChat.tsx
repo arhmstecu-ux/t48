@@ -19,6 +19,7 @@ interface GroupMessage {
   created_at: string;
   _status?: MessageStatus;
   _optimisticId?: string;
+  _isOwner?: boolean;
 }
 
 const GroupChat = () => {

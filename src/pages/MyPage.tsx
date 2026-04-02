@@ -109,6 +109,30 @@ const MyPage = () => {
             </div>
           </div>
 
+          {/* Level Progress */}
+          {userLevel && userLevel.level < 20 && (
+            <div className="glass-card rounded-2xl p-5 mb-6">
+              <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-warning" /> Progress Level</h2>
+              <div className="text-sm text-muted-foreground mb-2">
+                {(() => {
+                  const lv = userLevel.level;
+                  const coinsNeeded = lv < 3 ? 4 : lv < 8 ? 8 : 13;
+                  return `Topup ${coinsNeeded} koin lagi untuk naik ke Level ${lv + 1}`;
+                })()}
+              </div>
+              {/* Current level reward */}
+              {(() => {
+                const reward = levelRewards.find((r: any) => r.level === userLevel.level);
+                return reward?.reward_name ? (
+                  <div className="bg-warning/10 rounded-lg p-3 mt-2">
+                    <p className="text-xs font-bold text-warning">🎁 Hadiah Level {userLevel.level}: {reward.reward_name}</p>
+                    {reward.reward_description && <p className="text-xs text-muted-foreground mt-0.5">{reward.reward_description}</p>}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          )}
+
           <h2 className="text-xl font-bold text-foreground mb-4">Riwayat Pembelian</h2>
           {loading ? (
             <p className="text-muted-foreground">Memuat...</p>

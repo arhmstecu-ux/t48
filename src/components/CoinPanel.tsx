@@ -41,11 +41,44 @@ const CoinPanel = () => {
     load();
   }, []);
 
+  const getLevelUpCoins = (level: number): number => {
+    if (level < 3) return 4;
+    if (level < 8) return 8;
+    return 13;
+  };
+
+  const updateUserLevel = async (userId: string, topupCoins: number) => {
+    const { data: levelData } = await supabase.from('user_levels' as any).select('*').eq('user_id', userId).single();
+    if (!levelData) {
+      await supabase.from('user_levels' as any).insert({ user_id: userId, level: 1, total_topup_coins: topupCoins } as any);
+      return;
+    }
+    const current = levelData as any;
+    let newTotal = current.total_topup_coins + topupCoins;
+    let newLevel = current.level;
+    // Calculate level ups
+    while (newLevel < 20) {
+      const needed = getLevelUpCoins(newLevel);
+      if (newTotal >= needed) {
+        newTotal -= needed;
+        newLevel++;
+      } else break;
+    }
+    await supabase.from('user_levels' as any).update({ level: newLevel, total_topup_coins: newTotal, updated_at: new Date().toISOString() } as any).eq('user_id', userId);
+    if (newLevel > current.level) {
+      // Notify user about level up
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        title: '⭐ Level Up!',
+        message: `Selamat! Kamu naik ke Level ${newLevel}!`,
+        type: 'level',
+      } as any);
+    }
+  };
+
   const handleConfirm = async (req: TopupRequest) => {
-    // Update request status
     await supabase.from('coin_topup_requests' as any).update({ status: 'confirmed', confirmed_at: new Date().toISOString() } as any).eq('id', req.id);
 
-    // Upsert coin balance
     const { data: existing } = await supabase.from('coin_balances' as any).select('balance').eq('user_id', req.user_id).single();
     if (existing) {
       await supabase.from('coin_balances' as any).update({ balance: (existing as any).balance + req.coin_amount, updated_at: new Date().toISOString() } as any).eq('user_id', req.user_id);
@@ -53,13 +86,15 @@ const CoinPanel = () => {
       await supabase.from('coin_balances' as any).insert({ user_id: req.user_id, balance: req.coin_amount } as any);
     }
 
-    // Log transaction
     await supabase.from('coin_transactions' as any).insert({
       user_id: req.user_id,
       amount: req.coin_amount,
       type: 'topup',
       description: `Topup ${req.coin_amount} koin (Kode: ${req.code})`,
     } as any);
+
+    // Update level
+    await updateUserLevel(req.user_id, req.coin_amount);
 
     toast.success(`${req.coin_amount} koin dikirim!`);
   };

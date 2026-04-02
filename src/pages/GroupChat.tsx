@@ -37,6 +37,13 @@ const GroupChat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Load owner user IDs
+    const loadOwners = async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
+    };
+    loadOwners();
+
     const init = async () => {
       const { count } = await supabase.from('group_members').select('*', { count: 'exact', head: true });
       setMemberCount(count || 0);

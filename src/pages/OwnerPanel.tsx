@@ -353,9 +353,26 @@ const OwnerPanel = () => {
             {showAddAnnouncement && (
               <form onSubmit={handleAddAnnouncement} className="glass-card rounded-xl p-6 mb-6 space-y-3">
                 <input placeholder="Judul" value={newAnnouncement.title} onChange={e => setNewAnnouncement({...newAnnouncement, title: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <input placeholder="Deskripsi" value={newAnnouncement.description} onChange={e => setNewAnnouncement({...newAnnouncement, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                <textarea placeholder="Deskripsi" value={newAnnouncement.description} onChange={e => setNewAnnouncement({...newAnnouncement, description: e.target.value})} rows={3} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground resize-none" />
                 <input type="datetime-local" value={newAnnouncement.date} onChange={e => setNewAnnouncement({...newAnnouncement, date: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <select value={newAnnouncement.type} onChange={e => setNewAnnouncement({...newAnnouncement, type: e.target.value as any})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground"><option value="show">Show</option><option value="vc">Video Call</option><option value="other">Event</option></select>
+                <select value={newAnnouncement.type} onChange={e => setNewAnnouncement({...newAnnouncement, type: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground">
+                  <option value="show">Show</option>
+                  <option value="2s">2-Shot</option>
+                  <option value="mng">Meet & Greet</option>
+                  <option value="vc">Video Call</option>
+                  <option value="other">Pengumuman</option>
+                </select>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Foto (opsional, max 3MB)</label>
+                  <input type="file" accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast.error('Max 3MB!'); return; }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setNewAnnouncement(prev => ({...prev, image_url: reader.result as string}));
+                    reader.readAsDataURL(file);
+                  }} className="w-full text-sm text-foreground" />
+                  {newAnnouncement.image_url && <img src={newAnnouncement.image_url} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg" />}
+                </div>
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
               </form>
             )}

@@ -14,7 +14,7 @@ export const memberPunishments: MemberPunishment[] = [
     nickname: 'Gendis',
     reason: 'Pelanggaran peraturan manajemen',
     startDate: '2025-03-01T00:00:00',
-    endDate: '2026-06-01T00:00:00',
+    endDate: '2026-05-17T00:00:00',
   },
 ];
 

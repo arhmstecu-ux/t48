@@ -26,7 +26,7 @@ const OwnerPanel = () => {
   const [newVideo, setNewVideo] = useState({ title: '', youtubeUrl: '', password: '' });
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [globalPassword, setGlobalPassword] = useState('');
-  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', description: '', date: '', type: 'show' as 'show' | 'vc' | 'other' });
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', description: '', date: '', type: 'show' as string, image_url: '' });
   const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
   const [newVoucher, setNewVoucher] = useState({ code: '', discount_percent: 10, max_uses: 100, expires_at: '' });
   const [showAddVoucher, setShowAddVoucher] = useState(false);
@@ -101,7 +101,7 @@ const OwnerPanel = () => {
   const handleAddVideo = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('replay_videos').insert({ title: newVideo.title, youtube_url: newVideo.youtubeUrl, password: newVideo.password || globalPassword }); if (error) { toast.error('Gagal'); return; } setNewVideo({ title: '', youtubeUrl: '', password: '' }); setShowAddVideo(false); toast.success('Video ditambahkan!'); };
   const handleDeleteVideo = async (id: string) => { await supabase.from('replay_videos').delete().eq('id', id); toast.success('Video dihapus!'); };
   const handleSaveGlobalPassword = async () => { await supabase.from('app_settings').upsert({ key: 'replay_global_password', value: globalPassword }); toast.success('Sandi disimpan!'); };
-  const handleAddAnnouncement = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('announcements').insert({ title: newAnnouncement.title, description: newAnnouncement.description, date: newAnnouncement.date ? new Date(newAnnouncement.date).toISOString() : null, type: newAnnouncement.type }); if (error) { toast.error('Gagal'); return; } setNewAnnouncement({ title: '', description: '', date: '', type: 'show' }); setShowAddAnnouncement(false); toast.success('Pengumuman ditambahkan!'); };
+  const handleAddAnnouncement = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('announcements').insert({ title: newAnnouncement.title, description: newAnnouncement.description, date: newAnnouncement.date ? new Date(newAnnouncement.date).toISOString() : null, type: newAnnouncement.type, image_url: newAnnouncement.image_url } as any); if (error) { toast.error('Gagal'); return; } setNewAnnouncement({ title: '', description: '', date: '', type: 'show', image_url: '' }); setShowAddAnnouncement(false); toast.success('Pengumuman ditambahkan!'); };
   const handleDeleteAnnouncement = async (id: string) => { await supabase.from('announcements').delete().eq('id', id); toast.success('Dihapus!'); };
   const handleUpdateOrderStatus = async (id: string, status: 'confirmed' | 'completed') => { await supabase.from('purchases').update({ status }).eq('id', id); toast.success(status === 'confirmed' ? 'Dikonfirmasi!' : 'Diselesaikan!'); };
   const handleAddVoucher = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('vouchers').insert({ code: newVoucher.code.toUpperCase(), discount_percent: newVoucher.discount_percent, max_uses: newVoucher.max_uses, expires_at: newVoucher.expires_at ? new Date(newVoucher.expires_at).toISOString() : null } as any); if (error) { toast.error('Gagal'); return; } setNewVoucher({ code: '', discount_percent: 10, max_uses: 100, expires_at: '' }); setShowAddVoucher(false); toast.success('Voucher dibuat!'); };
@@ -353,9 +353,26 @@ const OwnerPanel = () => {
             {showAddAnnouncement && (
               <form onSubmit={handleAddAnnouncement} className="glass-card rounded-xl p-6 mb-6 space-y-3">
                 <input placeholder="Judul" value={newAnnouncement.title} onChange={e => setNewAnnouncement({...newAnnouncement, title: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <input placeholder="Deskripsi" value={newAnnouncement.description} onChange={e => setNewAnnouncement({...newAnnouncement, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                <textarea placeholder="Deskripsi" value={newAnnouncement.description} onChange={e => setNewAnnouncement({...newAnnouncement, description: e.target.value})} rows={3} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground resize-none" />
                 <input type="datetime-local" value={newAnnouncement.date} onChange={e => setNewAnnouncement({...newAnnouncement, date: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <select value={newAnnouncement.type} onChange={e => setNewAnnouncement({...newAnnouncement, type: e.target.value as any})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground"><option value="show">Show</option><option value="vc">Video Call</option><option value="other">Event</option></select>
+                <select value={newAnnouncement.type} onChange={e => setNewAnnouncement({...newAnnouncement, type: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground">
+                  <option value="show">Show</option>
+                  <option value="2s">2-Shot</option>
+                  <option value="mng">Meet & Greet</option>
+                  <option value="vc">Video Call</option>
+                  <option value="other">Pengumuman</option>
+                </select>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Foto (opsional, max 3MB)</label>
+                  <input type="file" accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast.error('Max 3MB!'); return; }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setNewAnnouncement(prev => ({...prev, image_url: reader.result as string}));
+                    reader.readAsDataURL(file);
+                  }} className="w-full text-sm text-foreground" />
+                  {newAnnouncement.image_url && <img src={newAnnouncement.image_url} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg" />}
+                </div>
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
               </form>
             )}

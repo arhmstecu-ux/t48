@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThreeDotMenu from './ThreeDotMenu';
 import Clock from './Clock';
+import NotificationBell from './NotificationBell';
 import defaultLogo from '@/assets/logo.jpg';
 
 const Header = () => {
@@ -39,6 +40,7 @@ const Header = () => {
         <div className="flex items-center gap-1">
           {user ? (
             <>
+              <NotificationBell />
               <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary hover:scale-110 transition-all duration-200">
                 <ShoppingCart className="w-5 h-5 text-foreground" />
                 {itemCount > 0 && (

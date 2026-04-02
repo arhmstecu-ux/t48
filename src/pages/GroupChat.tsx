@@ -19,6 +19,7 @@ interface GroupMessage {
   created_at: string;
   _status?: MessageStatus;
   _optimisticId?: string;
+  _isOwner?: boolean;
 }
 
 const GroupChat = () => {
@@ -31,10 +32,18 @@ const GroupChat = () => {
   const [joined, setJoined] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Load owner user IDs
+    const loadOwners = async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
+    };
+    loadOwners();
+
     const init = async () => {
       const { count } = await supabase.from('group_members').select('*', { count: 'exact', head: true });
       setMemberCount(count || 0);
@@ -284,7 +293,7 @@ const GroupChat = () => {
                       </div>
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <p className="text-xs font-semibold text-primary mb-0.5 ml-1">{msg.username}</p>}
+                      {!isMe && <p className={`text-xs font-semibold mb-0.5 ml-1 ${ownerUserIds.has(msg.user_id) ? 'text-destructive' : 'text-primary'}`}>{msg.username}{ownerUserIds.has(msg.user_id) ? ' 👑' : ''}</p>}
                       <div className={`rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-secondary text-secondary-foreground rounded-bl-md'} ${msg._status === 'failed' ? 'opacity-70' : ''} relative`}>
                         {msg.content && <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>}
                         {msg.image_url && (

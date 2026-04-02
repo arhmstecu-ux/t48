@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera } from 'lucide-react';
+import { Camera, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
@@ -20,6 +20,25 @@ const MyPage = () => {
   );
 
   const { data: purchaseItems } = useRealtimeTable<Tables<'purchase_items'>>('purchase_items', undefined, !!user);
+
+  const [userLevel, setUserLevel] = useState<{ level: number; total_topup_coins: number } | null>(null);
+  const [levelRewards, setLevelRewards] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase.from('user_levels' as any).select('*').eq('user_id', user.id).single();
+      if (data) setUserLevel(data as any);
+    };
+    load();
+    const ch = supabase.channel('my-level-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'user_levels' }, () => load()).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
+
+  useEffect(() => {
+    const load = async () => { const { data } = await supabase.from('level_rewards' as any).select('*').order('level'); if (data) setLevelRewards(data as any[]); };
+    load();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || !profile)) {
@@ -79,9 +98,40 @@ const MyPage = () => {
                 <h1 className="text-2xl font-extrabold text-foreground">{profile.username}</h1>
                 <p className="text-sm text-muted-foreground">{profile.email}</p>
                 <p className="text-sm text-muted-foreground">{profile.phone}</p>
+                {userLevel && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Star className="w-4 h-4 text-warning" />
+                    <span className="text-sm font-bold text-warning">Level {userLevel.level}</span>
+                    <span className="text-xs text-muted-foreground">({userLevel.total_topup_coins} koin total topup)</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Level Progress */}
+          {userLevel && userLevel.level < 20 && (
+            <div className="glass-card rounded-2xl p-5 mb-6">
+              <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-warning" /> Progress Level</h2>
+              <div className="text-sm text-muted-foreground mb-2">
+                {(() => {
+                  const lv = userLevel.level;
+                  const coinsNeeded = lv < 3 ? 4 : lv < 8 ? 8 : 13;
+                  return `Topup ${coinsNeeded} koin lagi untuk naik ke Level ${lv + 1}`;
+                })()}
+              </div>
+              {/* Current level reward */}
+              {(() => {
+                const reward = levelRewards.find((r: any) => r.level === userLevel.level);
+                return reward?.reward_name ? (
+                  <div className="bg-warning/10 rounded-lg p-3 mt-2">
+                    <p className="text-xs font-bold text-warning">🎁 Hadiah Level {userLevel.level}: {reward.reward_name}</p>
+                    {reward.reward_description && <p className="text-xs text-muted-foreground mt-0.5">{reward.reward_description}</p>}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          )}
 
           <h2 className="text-xl font-bold text-foreground mb-4">Riwayat Pembelian</h2>
           {loading ? (

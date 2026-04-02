@@ -41,7 +41,6 @@ const CoinTopup = () => {
       const { data } = await supabase.from('coin_balances' as any).select('balance').eq('user_id', user.id).single();
       if (data) setBalance((data as any).balance || 0);
       else {
-        // Create balance if not exists
         await supabase.from('coin_balances' as any).insert({ user_id: user.id, balance: 0 } as any);
         setBalance(0);
       }
@@ -51,6 +50,19 @@ const CoinTopup = () => {
     const ch = supabase.channel('coin-balance-rt')
       .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'coin_balances' }, () => load())
       .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
+
+  // Load user level
+  const [userLevel, setUserLevel] = useState<{ level: number; total_topup_coins: number } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase.from('user_levels' as any).select('*').eq('user_id', user.id).single();
+      if (data) setUserLevel(data as any);
+    };
+    load();
+    const ch = supabase.channel('my-level-topup-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'user_levels' }, () => load()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
 
@@ -126,6 +138,16 @@ const CoinTopup = () => {
             <span className="text-2xl font-extrabold text-foreground">{balance}</span>
           </div>
           <p className="text-sm text-muted-foreground">Koin kamu</p>
+          {userLevel && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="text-sm font-bold text-warning">⭐ Level {userLevel.level}</span>
+              {userLevel.level < 20 && (
+                <span className="text-xs text-muted-foreground">
+                  (perlu {userLevel.level < 3 ? 4 : userLevel.level < 8 ? 8 : 13} koin topup lagi)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {step === 'select' && (

@@ -55,6 +55,7 @@ const MovingWatermark = () => {
 const LiveStream = () => {
   const { user, profile, isOwner } = useAuth();
   const [comments, setComments] = useState<LiveComment[]>([]);
+  const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [sending, setSending] = useState(false);
   const [liveUrl, setLiveUrl] = useState('');
@@ -133,6 +134,12 @@ const LiveStream = () => {
 
   // Load settings from app_settings
   useEffect(() => {
+    // Load owner IDs
+    const loadOwners = async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
+    };
+    loadOwners();
     const loadSettings = async () => {
       const { data } = await supabase.from('app_settings').select('*').in('key', [
         'livestream_url', 'livestream_title', 'livestream_description',
@@ -658,7 +665,7 @@ const LiveStream = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-primary">{c.username}</span>
+                      <span className={`text-xs font-bold ${ownerUserIds.has(c.user_id) ? 'text-destructive' : 'text-primary'}`}>{c.username}{ownerUserIds.has(c.user_id) ? ' 👑' : ''}</span>
                       <span className="text-xs text-foreground ml-1.5">{c.content}</span>
                     </div>
                     {isOwner && (

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import type { Tables } from '@/integrations/supabase/types';
-import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon, Coins } from 'lucide-react';
+import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon, Coins, Star } from 'lucide-react';
 import CoinPanel from '@/components/CoinPanel';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -18,7 +18,7 @@ const SLIDER_KEYS = ['home_slider_1', 'home_slider_2', 'home_slider_3', 'home_sl
 const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels'>('products');
   const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
@@ -47,6 +47,11 @@ const OwnerPanel = () => {
   const [liveTitle, setLiveTitle] = useState('');
   const [liveDesc, setLiveDesc] = useState('');
   const [liveActive, setLiveActive] = useState(false);
+  // Level rewards
+  const [levelRewards, setLevelRewards] = useState<{id: string; level: number; reward_name: string; reward_description: string}[]>([]);
+  const [editRewardLevel, setEditRewardLevel] = useState<number | null>(null);
+  const [editRewardName, setEditRewardName] = useState('');
+  const [editRewardDesc, setEditRewardDesc] = useState('');
 
   const { data: products } = useRealtimeTable<Tables<'products'>>('products');
   const { data: profiles } = useRealtimeTable<Tables<'profiles'>>('profiles');
@@ -85,6 +90,14 @@ const OwnerPanel = () => {
     const loadVouchers = async () => { const { data } = await supabase.from('vouchers').select('*').order('created_at', { ascending: false }); if (data) setVouchers(data as Voucher[]); };
     loadVouchers();
     const ch = supabase.channel('vouchers-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'vouchers' }, () => loadVouchers()).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  // Load level rewards
+  useEffect(() => {
+    const loadRewards = async () => { const { data } = await supabase.from('level_rewards' as any).select('*').order('level', { ascending: true }); if (data) setLevelRewards(data as any[]); };
+    loadRewards();
+    const ch = supabase.channel('level-rewards-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'level_rewards' }, () => loadRewards()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 
@@ -206,6 +219,7 @@ const OwnerPanel = () => {
     { key: 'prizes' as const, label: 'Spin' },
     { key: 'spintransfer' as const, label: 'Transfer Spin' },
     { key: 'coins' as const, label: '🪙 Koin' },
+    { key: 'levels' as const, label: '⭐ Level' },
     { key: 'live' as const, label: 'Live' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },
@@ -553,6 +567,56 @@ const OwnerPanel = () => {
                   className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground text-sm resize-none" />
                 <button onClick={handleSaveMaintenanceMsg} className="mt-2 px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-medium">Simpan Pesan</button>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {tab === 'levels' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-warning" /> Kelola Hadiah Level</h2>
+            <p className="text-sm text-muted-foreground mb-2">Atur hadiah untuk setiap level. Syarat naik level:</p>
+            <div className="glass-card rounded-xl p-4 mb-4 text-xs text-muted-foreground space-y-1">
+              <p>• Level 1→3: Topup 4 koin per level</p>
+              <p>• Level 3→8: Topup 8 koin per level</p>
+              <p>• Level 8→20: Topup 13 koin per level</p>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 20 }, (_, i) => i + 1).map(level => {
+                const reward = levelRewards.find(r => r.level === level);
+                const isEditing = editRewardLevel === level;
+                return (
+                  <div key={level} className="glass-card rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-sm font-bold text-primary-foreground">{level}</span>
+                        <div>
+                          <h3 className="font-semibold text-foreground text-sm">Level {level}</h3>
+                          {reward?.reward_name ? (
+                            <p className="text-xs text-muted-foreground">🎁 {reward.reward_name}{reward.reward_description ? ` — ${reward.reward_description}` : ''}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">Belum ada hadiah</p>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={() => { setEditRewardLevel(level); setEditRewardName(reward?.reward_name || ''); setEditRewardDesc(reward?.reward_description || ''); }} className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium">Edit</button>
+                    </div>
+                    {isEditing && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="mt-3 pt-3 border-t border-border/50 space-y-2">
+                        <input value={editRewardName} onChange={e => setEditRewardName(e.target.value)} placeholder="Nama hadiah..." className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+                        <input value={editRewardDesc} onChange={e => setEditRewardDesc(e.target.value)} placeholder="Deskripsi hadiah..." className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+                        <div className="flex gap-2">
+                          <button onClick={async () => {
+                            await supabase.from('level_rewards' as any).upsert({ level, reward_name: editRewardName, reward_description: editRewardDesc } as any, { onConflict: 'level' });
+                            setEditRewardLevel(null);
+                            toast.success(`Hadiah level ${level} disimpan!`);
+                          }} className="px-4 py-1.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium">Simpan</button>
+                          <button onClick={() => setEditRewardLevel(null)} className="px-4 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm">Batal</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}

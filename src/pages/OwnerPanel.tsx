@@ -47,6 +47,11 @@ const OwnerPanel = () => {
   const [liveTitle, setLiveTitle] = useState('');
   const [liveDesc, setLiveDesc] = useState('');
   const [liveActive, setLiveActive] = useState(false);
+  // Level rewards
+  const [levelRewards, setLevelRewards] = useState<{id: string; level: number; reward_name: string; reward_description: string}[]>([]);
+  const [editRewardLevel, setEditRewardLevel] = useState<number | null>(null);
+  const [editRewardName, setEditRewardName] = useState('');
+  const [editRewardDesc, setEditRewardDesc] = useState('');
 
   const { data: products } = useRealtimeTable<Tables<'products'>>('products');
   const { data: profiles } = useRealtimeTable<Tables<'profiles'>>('profiles');

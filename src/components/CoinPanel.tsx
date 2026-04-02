@@ -123,6 +123,9 @@ const CoinPanel = () => {
       description: `Transfer manual ${manualAmount} koin dari admin`,
     } as any);
 
+    // Update level
+    await updateUserLevel(target.user_id, manualAmount);
+
     toast.success(`${manualAmount} koin dikirim ke ${target.username}!`);
     setManualUserId('');
     setManualAmount(1);

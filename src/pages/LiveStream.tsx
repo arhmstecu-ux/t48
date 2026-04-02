@@ -665,7 +665,7 @@ const LiveStream = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-primary">{c.username}</span>
+                      <span className={`text-xs font-bold ${ownerUserIds.has(c.user_id) ? 'text-destructive' : 'text-primary'}`}>{c.username}{ownerUserIds.has(c.user_id) ? ' 👑' : ''}</span>
                       <span className="text-xs text-foreground ml-1.5">{c.content}</span>
                     </div>
                     {isOwner && (

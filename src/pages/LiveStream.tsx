@@ -169,6 +169,48 @@ const LiveStream = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Load blacklist & moderators
+  useEffect(() => {
+    const loadBlacklist = async () => {
+      const { data } = await supabase.from('livestream_blacklist' as any).select('profile_code');
+      if (data) setBlacklistedCodes(new Set((data as any[]).map(d => d.profile_code)));
+    };
+    const loadMods = async () => {
+      const { data } = await supabase.from('livestream_moderators' as any).select('profile_code');
+      if (data) setModeratorCodes(new Set((data as any[]).map(d => d.profile_code)));
+    };
+    loadBlacklist();
+    loadMods();
+    const ch = supabase.channel('live-access-rt')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_blacklist' }, () => loadBlacklist())
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_moderators' }, () => loadMods())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const handleAddBlacklist = async () => {
+    const code = blacklistInput.trim().toUpperCase();
+    if (!code) return;
+    await supabase.from('livestream_blacklist' as any).insert({ profile_code: code } as any);
+    setBlacklistInput('');
+    toast.success(`Kode ${code} di-blacklist dari live!`);
+  };
+  const handleRemoveBlacklist = async (code: string) => {
+    await supabase.from('livestream_blacklist' as any).delete().eq('profile_code', code);
+    toast.success(`Blacklist ${code} dicabut!`);
+  };
+  const handleAddMod = async () => {
+    const code = modInput.trim().toUpperCase();
+    if (!code) return;
+    await supabase.from('livestream_moderators' as any).insert({ profile_code: code } as any);
+    setModInput('');
+    toast.success(`Kode ${code} dijadikan moderator!`);
+  };
+  const handleRemoveMod = async (code: string) => {
+    await supabase.from('livestream_moderators' as any).delete().eq('profile_code', code);
+    toast.success(`Moderator ${code} dicabut!`);
+  };
+
   // Viewer tracking - heartbeat
   useEffect(() => {
     if (!user || !liveActive) return;

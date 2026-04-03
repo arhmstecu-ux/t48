@@ -33,16 +33,26 @@ const GroupChat = () => {
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
+  const [moderatorUserIds, setModeratorUserIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Load owner user IDs
+    // Load owner & moderator user IDs
     const loadOwners = async () => {
       const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
     };
+    const loadModerators = async () => {
+      const { data: mods } = await supabase.from('livestream_moderators').select('profile_code');
+      if (mods && mods.length > 0) {
+        const codes = (mods as any[]).map(m => m.profile_code);
+        const { data: profiles } = await supabase.from('profiles').select('user_id, profile_code').in('profile_code', codes);
+        if (profiles) setModeratorUserIds(new Set(profiles.map(p => p.user_id)));
+      }
+    };
     loadOwners();
+    loadModerators();
 
     const init = async () => {
       const { count } = await supabase.from('group_members').select('*', { count: 'exact', head: true });
@@ -293,7 +303,23 @@ const GroupChat = () => {
                       </div>
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <p className={`text-xs font-semibold mb-0.5 ml-1 ${ownerUserIds.has(msg.user_id) ? 'text-destructive' : 'text-primary'}`}>{msg.username}{ownerUserIds.has(msg.user_id) ? ' 👑' : ''}</p>}
+                      {!isMe && (
+                        <div className="flex items-center gap-1.5 mb-0.5 ml-1">
+                          {ownerUserIds.has(msg.user_id) ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
+                              <span className="text-xs font-bold text-destructive-foreground">{msg.username} 👑</span>
+                              <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
+                            </span>
+                          ) : moderatorUserIds.has(msg.user_id) ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-xs font-bold text-chart-4">{msg.username}</span>
+                              <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-primary">{msg.username}</span>
+                          )}
+                        </div>
+                      )}
                       <div className={`rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-secondary text-secondary-foreground rounded-bl-md'} ${msg._status === 'failed' ? 'opacity-70' : ''} relative`}>
                         {msg.content && <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>}
                         {msg.image_url && (

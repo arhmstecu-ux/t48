@@ -57,6 +57,7 @@ const LiveStream = () => {
   const { user, profile, isOwner } = useAuth();
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
+  const [moderatorUserIds, setModeratorUserIds] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [sending, setSending] = useState(false);
   const [liveUrl, setLiveUrl] = useState('');
@@ -144,7 +145,16 @@ const LiveStream = () => {
       const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
     };
+    const loadModeratorUserIds = async () => {
+      const { data: mods } = await supabase.from('livestream_moderators').select('profile_code');
+      if (mods && mods.length > 0) {
+        const codes = (mods as any[]).map(m => m.profile_code);
+        const { data: profiles } = await supabase.from('profiles').select('user_id, profile_code').in('profile_code', codes);
+        if (profiles) setModeratorUserIds(new Set(profiles.map(p => p.user_id)));
+      }
+    };
     loadOwners();
+    loadModeratorUserIds();
     const loadSettings = async () => {
       const { data } = await supabase.from('app_settings').select('*').in('key', [
         'livestream_url', 'livestream_title', 'livestream_description',
@@ -760,7 +770,19 @@ const LiveStream = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-xs font-bold ${ownerUserIds.has(c.user_id) ? 'text-destructive' : 'text-primary'}`}>{c.username}{ownerUserIds.has(c.user_id) ? ' 👑' : ''}</span>
+                      {ownerUserIds.has(c.user_id) ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
+                          <span className="text-xs font-bold text-destructive-foreground">{c.username} 👑</span>
+                          <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
+                        </span>
+                      ) : moderatorUserIds.has(c.user_id) ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs font-bold text-chart-4">{c.username}</span>
+                          <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-primary">{c.username}</span>
+                      )}
                       <span className="text-xs text-foreground ml-1.5">{c.content}</span>
                     </div>
                     {isOwner && (

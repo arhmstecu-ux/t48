@@ -76,6 +76,10 @@ const LiveStream = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [blacklistedCodes, setBlacklistedCodes] = useState<Set<string>>(new Set());
+  const [moderatorCodes, setModeratorCodes] = useState<Set<string>>(new Set());
+  const [blacklistInput, setBlacklistInput] = useState('');
+  const [modInput, setModInput] = useState('');
 
   const postPlayerCommand = useCallback((func: string, args: unknown[] = []) => {
     const iframeWindow = iframeRef.current?.contentWindow;

@@ -57,6 +57,7 @@ const LiveStream = () => {
   const { user, profile, isOwner } = useAuth();
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
+  const [moderatorUserIds, setModeratorUserIds] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState('');
   const [sending, setSending] = useState(false);
   const [liveUrl, setLiveUrl] = useState('');

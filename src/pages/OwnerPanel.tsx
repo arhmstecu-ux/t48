@@ -285,7 +285,7 @@ const OwnerPanel = () => {
                           <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-sm font-bold text-primary-foreground">{u.username[0]?.toUpperCase()}</div>
                         )}
                         <div>
-                          <div className="flex items-center gap-2 mb-0.5"><h3 className="font-semibold text-foreground">{u.username}</h3>{u.is_blacklisted && <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium">Diblokir</span>}</div>
+                          <div className="flex items-center gap-2 mb-0.5"><h3 className="font-semibold text-foreground">{u.username}</h3>{(u as any).profile_code && <span className="text-xs font-mono text-primary font-bold">#{(u as any).profile_code}</span>}{u.is_blacklisted && <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium">Diblokir</span>}</div>
                           <p className="text-xs text-muted-foreground">{u.email} • {u.phone}</p>
                         </div>
                       </div>

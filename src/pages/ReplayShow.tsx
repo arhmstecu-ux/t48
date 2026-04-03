@@ -36,8 +36,8 @@ const ReplayShow = () => {
       if (data) setCoinBalance(data.balance);
     };
     const loadPurchases = async () => {
-      const { data } = await supabase.from('replay_purchases' as any).select('video_id').eq('user_id', user.id);
-      if (data) setPurchasedVideos(new Set((data as any[]).map(d => d.video_id)));
+      const { data } = await supabase.from('replay_purchases').select('video_id').eq('user_id', user.id);
+      if (data) setPurchasedVideos(new Set(data.map(d => d.video_id)));
     };
     loadBalance();
     loadPurchases();
@@ -77,7 +77,7 @@ const ReplayShow = () => {
       // Record transaction
       await supabase.from('coin_transactions').insert({ user_id: user.id, amount: -REPLAY_COIN_PRICE, type: 'purchase', description: `Replay: ${video.title}` });
       // Record replay purchase
-      await supabase.from('replay_purchases' as any).insert({ user_id: user.id, video_id: video.id, coin_amount: REPLAY_COIN_PRICE } as any);
+      await supabase.from('replay_purchases').insert({ user_id: user.id, video_id: video.id, coin_amount: REPLAY_COIN_PRICE });
       
       setCoinBalance(prev => prev - REPLAY_COIN_PRICE);
       setPurchasedVideos(prev => new Set([...prev, video.id]));

@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX } from 'lucide-react';
+import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
@@ -30,7 +30,7 @@ const POSITIONS = [
   { top: '65%', left: '45%' },
 ];
 
-const MovingWatermark = () => {
+const MovingWatermark = ({ profileCode }: { profileCode?: string }) => {
   const [posIndex, setPosIndex] = useState(0);
 
   useEffect(() => {
@@ -41,13 +41,14 @@ const MovingWatermark = () => {
   }, []);
 
   const pos = POSITIONS[posIndex];
+  const wmText = profileCode ? `T4-${profileCode}` : '@t48id';
 
   return (
     <div
       className="absolute z-30 text-white/30 text-sm font-bold select-none pointer-events-none transition-all duration-1000 ease-in-out"
       style={{ top: pos.top, left: pos.left }}
     >
-      @t48id
+      {wmText}
     </div>
   );
 };
@@ -75,6 +76,10 @@ const LiveStream = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [blacklistedCodes, setBlacklistedCodes] = useState<Set<string>>(new Set());
+  const [moderatorCodes, setModeratorCodes] = useState<Set<string>>(new Set());
+  const [blacklistInput, setBlacklistInput] = useState('');
+  const [modInput, setModInput] = useState('');
 
   const postPlayerCommand = useCallback((func: string, args: unknown[] = []) => {
     const iframeWindow = iframeRef.current?.contentWindow;
@@ -163,6 +168,48 @@ const LiveStream = () => {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
+
+  // Load blacklist & moderators
+  useEffect(() => {
+    const loadBlacklist = async () => {
+      const { data } = await supabase.from('livestream_blacklist' as any).select('profile_code');
+      if (data) setBlacklistedCodes(new Set((data as any[]).map(d => d.profile_code)));
+    };
+    const loadMods = async () => {
+      const { data } = await supabase.from('livestream_moderators' as any).select('profile_code');
+      if (data) setModeratorCodes(new Set((data as any[]).map(d => d.profile_code)));
+    };
+    loadBlacklist();
+    loadMods();
+    const ch = supabase.channel('live-access-rt')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_blacklist' }, () => loadBlacklist())
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_moderators' }, () => loadMods())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const handleAddBlacklist = async () => {
+    const code = blacklistInput.trim().toUpperCase();
+    if (!code) return;
+    await supabase.from('livestream_blacklist' as any).insert({ profile_code: code } as any);
+    setBlacklistInput('');
+    toast.success(`Kode ${code} di-blacklist dari live!`);
+  };
+  const handleRemoveBlacklist = async (code: string) => {
+    await supabase.from('livestream_blacklist' as any).delete().eq('profile_code', code);
+    toast.success(`Blacklist ${code} dicabut!`);
+  };
+  const handleAddMod = async () => {
+    const code = modInput.trim().toUpperCase();
+    if (!code) return;
+    await supabase.from('livestream_moderators' as any).insert({ profile_code: code } as any);
+    setModInput('');
+    toast.success(`Kode ${code} dijadikan moderator!`);
+  };
+  const handleRemoveMod = async (code: string) => {
+    await supabase.from('livestream_moderators' as any).delete().eq('profile_code', code);
+    toast.success(`Moderator ${code} dicabut!`);
+  };
 
   // Viewer tracking - heartbeat
   useEffect(() => {
@@ -487,6 +534,22 @@ const LiveStream = () => {
     );
   }
 
+  // Blacklisted user check
+  const userCode = (profile as any)?.profile_code;
+  if (!isOwner && userCode && blacklistedCodes.has(userCode)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Ban className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-extrabold text-gradient mb-3">Akses Diblokir</h1>
+          <p className="text-muted-foreground">Kamu telah di-blacklist dari livestream ini. Hubungi admin untuk info lebih lanjut.</p>
+          <p className="text-xs text-muted-foreground mt-2">Kode: #{userCode}</p>
+        </main>
+      </div>
+    );
+  }
+
   // Viewer limit reached
   if (!isOwner && liveActive && viewerCount >= maxViewers) {
     return (
@@ -557,6 +620,38 @@ const LiveStream = () => {
                 </div>
 
                 <button onClick={handleSaveSettings} className="px-4 py-1.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium">Simpan</button>
+
+                {/* Moderator management */}
+                <div className="pt-2 border-t border-border/30">
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-primary" /> Moderator (kode profil)</p>
+                  <div className="flex gap-1.5 mb-1.5">
+                    <input value={modInput} onChange={e => setModInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
+                    <button onClick={handleAddMod} className="px-3 py-1 rounded-lg gradient-primary text-primary-foreground text-xs font-medium">Tambah</button>
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[...moderatorCodes].map(code => (
+                      <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-mono">
+                        {code} <button onClick={() => handleRemoveMod(code)}><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Blacklist management */}
+                <div className="pt-2 border-t border-border/30">
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Ban className="w-3.5 h-3.5 text-destructive" /> Blacklist Live (kode profil)</p>
+                  <div className="flex gap-1.5 mb-1.5">
+                    <input value={blacklistInput} onChange={e => setBlacklistInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
+                    <button onClick={handleAddBlacklist} className="px-3 py-1 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium">Blacklist</button>
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[...blacklistedCodes].map(code => (
+                      <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs font-mono">
+                        {code} <button onClick={() => handleRemoveBlacklist(code)}><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>
@@ -602,7 +697,7 @@ const LiveStream = () => {
                   <div className="absolute bottom-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
 
                   {/* @t48id moving watermark */}
-                  <MovingWatermark />
+                  <MovingWatermark profileCode={userCode} />
 
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
                     <button

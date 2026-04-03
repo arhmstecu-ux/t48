@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX } from 'lucide-react';
+import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 

@@ -38,12 +38,21 @@ const GroupChat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Load owner user IDs
+    // Load owner & moderator user IDs
     const loadOwners = async () => {
       const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
     };
+    const loadModerators = async () => {
+      const { data: mods } = await supabase.from('livestream_moderators').select('profile_code');
+      if (mods && mods.length > 0) {
+        const codes = (mods as any[]).map(m => m.profile_code);
+        const { data: profiles } = await supabase.from('profiles').select('user_id, profile_code').in('profile_code', codes);
+        if (profiles) setModeratorUserIds(new Set(profiles.map(p => p.user_id)));
+      }
+    };
     loadOwners();
+    loadModerators();
 
     const init = async () => {
       const { count } = await supabase.from('group_members').select('*', { count: 'exact', head: true });

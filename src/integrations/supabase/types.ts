@@ -239,6 +239,27 @@ export type Database = {
         }
         Relationships: []
       }
+      livestream_blacklist: {
+        Row: {
+          created_at: string
+          id: string
+          profile_code: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_code: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_code?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       livestream_comments: {
         Row: {
           content: string
@@ -263,6 +284,24 @@ export type Database = {
           profile_photo?: string | null
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      livestream_moderators: {
+        Row: {
+          created_at: string
+          id: string
+          profile_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_code?: string
         }
         Relationships: []
       }
@@ -360,6 +399,7 @@ export type Database = {
           id: string
           is_blacklisted: boolean
           phone: string | null
+          profile_code: string | null
           profile_photo: string | null
           updated_at: string
           user_id: string
@@ -371,6 +411,7 @@ export type Database = {
           id?: string
           is_blacklisted?: boolean
           phone?: string | null
+          profile_code?: string | null
           profile_photo?: string | null
           updated_at?: string
           user_id: string
@@ -382,6 +423,7 @@ export type Database = {
           id?: string
           is_blacklisted?: boolean
           phone?: string | null
+          profile_code?: string | null
           profile_photo?: string | null
           updated_at?: string
           user_id?: string

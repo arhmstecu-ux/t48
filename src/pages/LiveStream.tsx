@@ -620,6 +620,38 @@ const LiveStream = () => {
                 </div>
 
                 <button onClick={handleSaveSettings} className="px-4 py-1.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium">Simpan</button>
+
+                {/* Moderator management */}
+                <div className="pt-2 border-t border-border/30">
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-primary" /> Moderator (kode profil)</p>
+                  <div className="flex gap-1.5 mb-1.5">
+                    <input value={modInput} onChange={e => setModInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
+                    <button onClick={handleAddMod} className="px-3 py-1 rounded-lg gradient-primary text-primary-foreground text-xs font-medium">Tambah</button>
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[...moderatorCodes].map(code => (
+                      <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-mono">
+                        {code} <button onClick={() => handleRemoveMod(code)}><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Blacklist management */}
+                <div className="pt-2 border-t border-border/30">
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Ban className="w-3.5 h-3.5 text-destructive" /> Blacklist Live (kode profil)</p>
+                  <div className="flex gap-1.5 mb-1.5">
+                    <input value={blacklistInput} onChange={e => setBlacklistInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
+                    <button onClick={handleAddBlacklist} className="px-3 py-1 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium">Blacklist</button>
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[...blacklistedCodes].map(code => (
+                      <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs font-mono">
+                        {code} <button onClick={() => handleRemoveBlacklist(code)}><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>

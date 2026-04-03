@@ -303,7 +303,23 @@ const GroupChat = () => {
                       </div>
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <p className={`text-xs font-semibold mb-0.5 ml-1 ${ownerUserIds.has(msg.user_id) ? 'text-destructive' : 'text-primary'}`}>{msg.username}{ownerUserIds.has(msg.user_id) ? ' 👑' : ''}</p>}
+                      {!isMe && (
+                        <div className="flex items-center gap-1.5 mb-0.5 ml-1">
+                          {ownerUserIds.has(msg.user_id) ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
+                              <span className="text-xs font-bold text-destructive-foreground">{msg.username} 👑</span>
+                              <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
+                            </span>
+                          ) : moderatorUserIds.has(msg.user_id) ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-xs font-bold text-chart-4">{msg.username}</span>
+                              <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-primary">{msg.username}</span>
+                          )}
+                        </div>
+                      )}
                       <div className={`rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-secondary text-secondary-foreground rounded-bl-md'} ${msg._status === 'failed' ? 'opacity-70' : ''} relative`}>
                         {msg.content && <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>}
                         {msg.image_url && (

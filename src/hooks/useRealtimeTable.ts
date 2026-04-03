@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-type TableName = 'products' | 'purchases' | 'purchase_items' | 'replay_videos' | 'announcements' | 'reviews' | 'app_settings' | 'profiles' | 'chat_messages' | 'group_messages' | 'group_members' | 'vouchers' | 'voucher_usage' | 'spin_prizes' | 'spin_results' | 'user_spins' | 'replay_purchases' | 'coin_balances' | 'coin_topup_requests' | 'coin_transactions' | 'livestream_comments' | 'livestream_viewers';
+type TableName = 'products' | 'purchases' | 'purchase_items' | 'replay_videos' | 'announcements' | 'reviews' | 'app_settings' | 'profiles' | 'chat_messages' | 'group_messages' | 'group_members' | 'vouchers' | 'voucher_usage' | 'spin_prizes' | 'spin_results' | 'user_spins' | 'replay_purchases' | 'coin_balances' | 'coin_topup_requests' | 'coin_transactions' | 'livestream_comments' | 'livestream_viewers' | 'livestream_blacklist' | 'livestream_moderators';
 
 export function useRealtimeTable<T extends Record<string, any>>(
   table: TableName,

@@ -96,6 +96,9 @@ const MyPage = () => {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-extrabold text-foreground">{profile.username}</h1>
+                {(profile as any).profile_code && (
+                  <p className="text-xs font-mono font-bold text-primary">#{(profile as any).profile_code}</p>
+                )}
                 <p className="text-sm text-muted-foreground">{profile.email}</p>
                 <p className="text-sm text-muted-foreground">{profile.phone}</p>
                 {userLevel && (

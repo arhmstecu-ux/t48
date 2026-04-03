@@ -30,7 +30,7 @@ const POSITIONS = [
   { top: '65%', left: '45%' },
 ];
 
-const MovingWatermark = () => {
+const MovingWatermark = ({ profileCode }: { profileCode?: string }) => {
   const [posIndex, setPosIndex] = useState(0);
 
   useEffect(() => {
@@ -41,13 +41,14 @@ const MovingWatermark = () => {
   }, []);
 
   const pos = POSITIONS[posIndex];
+  const wmText = profileCode ? `T4-${profileCode}` : '@t48id';
 
   return (
     <div
       className="absolute z-30 text-white/30 text-sm font-bold select-none pointer-events-none transition-all duration-1000 ease-in-out"
       style={{ top: pos.top, left: pos.left }}
     >
-      @t48id
+      {wmText}
     </div>
   );
 };

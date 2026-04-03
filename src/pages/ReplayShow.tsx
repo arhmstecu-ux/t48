@@ -36,8 +36,8 @@ const ReplayShow = () => {
       if (data) setCoinBalance(data.balance);
     };
     const loadPurchases = async () => {
-      const { data } = await supabase.from('replay_purchases' as any).select('video_id').eq('user_id', user.id);
-      if (data) setPurchasedVideos(new Set((data as any[]).map(d => d.video_id)));
+      const { data } = await supabase.from('replay_purchases').select('video_id').eq('user_id', user.id);
+      if (data) setPurchasedVideos(new Set(data.map(d => d.video_id)));
     };
     loadBalance();
     loadPurchases();

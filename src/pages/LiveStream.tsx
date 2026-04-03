@@ -534,6 +534,22 @@ const LiveStream = () => {
     );
   }
 
+  // Blacklisted user check
+  const userCode = (profile as any)?.profile_code;
+  if (!isOwner && userCode && blacklistedCodes.has(userCode)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Ban className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-extrabold text-gradient mb-3">Akses Diblokir</h1>
+          <p className="text-muted-foreground">Kamu telah di-blacklist dari livestream ini. Hubungi admin untuk info lebih lanjut.</p>
+          <p className="text-xs text-muted-foreground mt-2">Kode: #{userCode}</p>
+        </main>
+      </div>
+    );
+  }
+
   // Viewer limit reached
   if (!isOwner && liveActive && viewerCount >= maxViewers) {
     return (

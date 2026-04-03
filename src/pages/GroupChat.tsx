@@ -33,6 +33,7 @@ const GroupChat = () => {
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [ownerUserIds, setOwnerUserIds] = useState<Set<string>>(new Set());
+  const [moderatorUserIds, setModeratorUserIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -770,7 +770,19 @@ const LiveStream = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-xs font-bold ${ownerUserIds.has(c.user_id) ? 'text-destructive' : 'text-primary'}`}>{c.username}{ownerUserIds.has(c.user_id) ? ' 👑' : ''}</span>
+                      {ownerUserIds.has(c.user_id) ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
+                          <span className="text-xs font-bold text-destructive-foreground">{c.username} 👑</span>
+                          <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
+                        </span>
+                      ) : moderatorUserIds.has(c.user_id) ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs font-bold text-chart-4">{c.username}</span>
+                          <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-primary">{c.username}</span>
+                      )}
                       <span className="text-xs text-foreground ml-1.5">{c.content}</span>
                     </div>
                     {isOwner && (

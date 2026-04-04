@@ -25,6 +25,7 @@ import LiveStream from "./pages/LiveStream";
 import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import AdminPanelPage from "./pages/AdminPanelPage";
 
 const queryClient = new QueryClient();
 

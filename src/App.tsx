@@ -133,6 +133,7 @@ const App = () => (
                 <Route path="/live" element={<LiveStream />} />
                 <Route path="/coin-topup" element={<CoinTopup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/admin-panel" element={<AdminPanelPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               {/* @t48id watermark footer */}

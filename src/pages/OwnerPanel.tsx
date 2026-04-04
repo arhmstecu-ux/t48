@@ -248,6 +248,21 @@ const OwnerPanel = () => {
                 </div>
                 <input placeholder="Deskripsi" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <input placeholder="Kategori" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Tanggal & Jam Tayang</label>
+                  <input type="datetime-local" value={newProduct.show_date} onChange={e => setNewProduct({...newProduct, show_date: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Gambar Produk (max 3MB)</label>
+                  <input type="file" accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast.error('Max 3MB!'); return; }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setNewProduct(prev => ({...prev, image: reader.result as string}));
+                    reader.readAsDataURL(file);
+                  }} className="w-full text-sm text-foreground" />
+                  {newProduct.image && <img src={newProduct.image} alt="Preview" className="mt-2 w-full h-24 object-cover rounded-lg" />}
+                </div>
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
               </form>
             )}

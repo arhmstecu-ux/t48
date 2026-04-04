@@ -269,11 +269,19 @@ const OwnerPanel = () => {
             <div className="space-y-3">
               {products.map(p => (
                 <div key={p.id} className="glass-card rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{p.name}</h3>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
-                      {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {p.image && (p.image as string).length > 10 ? (
+                      <img src={p.image!} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0"><span className="text-xl">🎤</span></div>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
+                        {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                        {(p as any).show_date && <span className="text-xs text-muted-foreground">📅 {new Date((p as any).show_date).toLocaleDateString('id-ID')}</span>}
+                      </div>
                     </div>
                   </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition"><Trash2 className="w-4 h-4 text-destructive" /></button>

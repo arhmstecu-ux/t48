@@ -19,7 +19,7 @@ const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels'>('products');
-  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState('');

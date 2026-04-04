@@ -206,7 +206,7 @@ const OwnerPanel = () => {
   };
 
   const formatPrice = (price: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
-  const filteredUsers = profiles.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()));
+  const filteredUsers = profiles.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()) || ((u as any).profile_code || '').toLowerCase().includes(searchUser.toLowerCase().replace('#', '')));
 
   const tabs = [
     { key: 'products' as const, label: 'Produk' },

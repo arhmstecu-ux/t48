@@ -294,7 +294,7 @@ const OwnerPanel = () => {
         {tab === 'users' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p className="text-sm text-muted-foreground mb-3">Total pendaftar: <strong className="text-foreground">{profiles.length}</strong></p>
-            <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Cari..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm" /></div>
+            <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Cari nama, email, atau #kode..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm" /></div>
             <div className="space-y-3">
               {filteredUsers.map(u => {
                 const userPurchases = purchases.filter(p => p.user_id === u.user_id);

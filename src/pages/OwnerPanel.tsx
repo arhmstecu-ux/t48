@@ -19,7 +19,7 @@ const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels'>('products');
-  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState('');
@@ -108,7 +108,7 @@ const OwnerPanel = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const handleAddProduct = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('products').insert({ name: newProduct.name, price: newProduct.price, description: newProduct.description, category: newProduct.category, image: newProduct.image, coin_price: newProduct.coin_price } as any); if (error) { toast.error('Gagal'); return; } setNewProduct({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '' }); setShowAdd(false); toast.success('Produk ditambahkan!'); };
+  const handleAddProduct = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('products').insert({ name: newProduct.name, price: newProduct.price, description: newProduct.description, category: newProduct.category, image: newProduct.image, coin_price: newProduct.coin_price, show_date: newProduct.show_date ? new Date(newProduct.show_date).toISOString() : null } as any); if (error) { toast.error('Gagal'); return; } setNewProduct({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' }); setShowAdd(false); toast.success('Produk ditambahkan!'); };
   const handleDeleteProduct = async (id: string) => { const { error } = await supabase.from('products').delete().eq('id', id); if (error) { toast.error('Gagal menghapus: ' + error.message); return; } toast.success('Produk dihapus!'); };
   const handleBlacklist = async (userId: string, isBlacklisted: boolean) => { await supabase.from('profiles').update({ is_blacklisted: !isBlacklisted }).eq('user_id', userId); toast.success(isBlacklisted ? 'User di-unblock!' : 'User diblokir!'); };
   const handleAddVideo = async (e: React.FormEvent) => { e.preventDefault(); const { error } = await supabase.from('replay_videos').insert({ title: newVideo.title, youtube_url: newVideo.youtubeUrl, password: newVideo.password || globalPassword }); if (error) { toast.error('Gagal'); return; } setNewVideo({ title: '', youtubeUrl: '', password: '' }); setShowAddVideo(false); toast.success('Video ditambahkan!'); };
@@ -206,7 +206,7 @@ const OwnerPanel = () => {
   };
 
   const formatPrice = (price: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
-  const filteredUsers = profiles.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()));
+  const filteredUsers = profiles.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()) || ((u as any).profile_code || '').toLowerCase().includes(searchUser.toLowerCase().replace('#', '')));
 
   const tabs = [
     { key: 'products' as const, label: 'Produk' },
@@ -248,17 +248,40 @@ const OwnerPanel = () => {
                 </div>
                 <input placeholder="Deskripsi" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <input placeholder="Kategori" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Tanggal & Jam Tayang</label>
+                  <input type="datetime-local" value={newProduct.show_date} onChange={e => setNewProduct({...newProduct, show_date: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Gambar Produk (max 3MB)</label>
+                  <input type="file" accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast.error('Max 3MB!'); return; }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setNewProduct(prev => ({...prev, image: reader.result as string}));
+                    reader.readAsDataURL(file);
+                  }} className="w-full text-sm text-foreground" />
+                  {newProduct.image && <img src={newProduct.image} alt="Preview" className="mt-2 w-full h-24 object-cover rounded-lg" />}
+                </div>
                 <button type="submit" className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan</button>
               </form>
             )}
             <div className="space-y-3">
               {products.map(p => (
                 <div key={p.id} className="glass-card rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{p.name}</h3>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
-                      {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {p.image && (p.image as string).length > 10 ? (
+                      <img src={p.image!} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0"><span className="text-xl">🎤</span></div>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
+                        {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price} Koin</span>}
+                        {(p as any).show_date && <span className="text-xs text-muted-foreground">📅 {new Date((p as any).show_date).toLocaleDateString('id-ID')}</span>}
+                      </div>
                     </div>
                   </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition"><Trash2 className="w-4 h-4 text-destructive" /></button>
@@ -271,7 +294,7 @@ const OwnerPanel = () => {
         {tab === 'users' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p className="text-sm text-muted-foreground mb-3">Total pendaftar: <strong className="text-foreground">{profiles.length}</strong></p>
-            <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Cari..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm" /></div>
+            <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Cari nama, email, atau #kode..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm" /></div>
             <div className="space-y-3">
               {filteredUsers.map(u => {
                 const userPurchases = purchases.filter(p => p.user_id === u.user_id);

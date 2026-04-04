@@ -41,10 +41,10 @@ const MyPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && (!user || !profile)) {
+    if (!authLoading && !user) {
       navigate('/login');
     }
-  }, [authLoading, user, profile, navigate]);
+  }, [authLoading, user, navigate]);
 
   if (authLoading || !user || !profile) {
     return (

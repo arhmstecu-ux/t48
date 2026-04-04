@@ -25,6 +25,7 @@ import LiveStream from "./pages/LiveStream";
 import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import AdminPanelPage from "./pages/AdminPanelPage";
 
 const queryClient = new QueryClient();
 
@@ -132,6 +133,7 @@ const App = () => (
                 <Route path="/live" element={<LiveStream />} />
                 <Route path="/coin-topup" element={<CoinTopup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/admin-panel" element={<AdminPanelPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               {/* @t48id watermark footer */}

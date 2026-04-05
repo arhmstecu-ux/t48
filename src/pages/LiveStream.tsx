@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield } from 'lucide-react';
+import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield, Pin, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
@@ -53,6 +53,25 @@ const MovingWatermark = ({ profileCode }: { profileCode?: string }) => {
   );
 };
 
+// Render text with clickable links
+const RenderWithLinks = ({ text }: { text: string }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all hover:opacity-80">
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+};
+
 const LiveStream = () => {
   const { user, profile, isOwner } = useAuth();
   const [comments, setComments] = useState<LiveComment[]>([]);
@@ -63,12 +82,14 @@ const LiveStream = () => {
   const [liveUrl, setLiveUrl] = useState('');
   const [liveTitle, setLiveTitle] = useState('');
   const [liveDesc, setLiveDesc] = useState('');
+  const [liveLogo, setLiveLogo] = useState('');
   const [liveActive, setLiveActive] = useState(false);
   const [chatEnabled, setChatEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [editUrl, setEditUrl] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editLogo, setEditLogo] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
   const [maxViewers, setMaxViewers] = useState(750);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -81,23 +102,20 @@ const LiveStream = () => {
   const [moderatorCodes, setModeratorCodes] = useState<Set<string>>(new Set());
   const [blacklistInput, setBlacklistInput] = useState('');
   const [modInput, setModInput] = useState('');
+  // Pinned message
+  const [pinnedMessage, setPinnedMessage] = useState<string>('');
+  const [editPinnedMessage, setEditPinnedMessage] = useState('');
 
   const postPlayerCommand = useCallback((func: string, args: unknown[] = []) => {
     const iframeWindow = iframeRef.current?.contentWindow;
     if (!iframeWindow) return;
-
-    iframeWindow.postMessage(
-      JSON.stringify({ event: 'command', func, args }),
-      '*',
-    );
+    iframeWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
   }, []);
 
   const handlePlayerLoad = useCallback(() => {
     setIsMuted(true);
     [120, 380, 800].forEach((delay) => {
-      window.setTimeout(() => {
-        postPlayerCommand('mute');
-      }, delay);
+      window.setTimeout(() => { postPlayerCommand('mute'); }, delay);
     });
   }, [postPlayerCommand]);
 
@@ -106,11 +124,10 @@ const LiveStream = () => {
       postPlayerCommand('unMute');
       postPlayerCommand('setVolume', [100]);
       setIsMuted(false);
-      return;
+    } else {
+      postPlayerCommand('mute');
+      setIsMuted(true);
     }
-
-    postPlayerCommand('mute');
-    setIsMuted(true);
   }, [isMuted, postPlayerCommand]);
 
   const fallbackUsername = useMemo(
@@ -120,7 +137,6 @@ const LiveStream = () => {
 
   const registerViewerHeartbeat = useCallback(async () => {
     if (!user) return;
-
     await supabase.from('livestream_viewers' as any).upsert({
       user_id: user.id,
       username: fallbackUsername,
@@ -134,13 +150,11 @@ const LiveStream = () => {
       .from('livestream_viewers' as any)
       .select('*', { count: 'exact', head: true })
       .gte('last_seen', cutoff);
-
     setViewerCount(count || 0);
   }, []);
 
-  // Load settings from app_settings
+  // Load settings
   useEffect(() => {
-    // Load owner IDs
     const loadOwners = async () => {
       const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       if (data) setOwnerUserIds(new Set(data.map(r => r.user_id)));
@@ -158,7 +172,8 @@ const LiveStream = () => {
     const loadSettings = async () => {
       const { data } = await supabase.from('app_settings').select('*').in('key', [
         'livestream_url', 'livestream_title', 'livestream_description',
-        'livestream_active', 'livestream_chat_enabled', 'livestream_max_viewers'
+        'livestream_active', 'livestream_chat_enabled', 'livestream_max_viewers',
+        'livestream_logo', 'livestream_pinned_message'
       ]);
       if (data) {
         data.forEach(s => {
@@ -168,6 +183,8 @@ const LiveStream = () => {
           if (s.key === 'livestream_active') setLiveActive(s.value === 'true');
           if (s.key === 'livestream_chat_enabled') setChatEnabled(s.value !== 'false');
           if (s.key === 'livestream_max_viewers') setMaxViewers(parseInt(s.value) || 750);
+          if (s.key === 'livestream_logo') { setLiveLogo(s.value); setEditLogo(s.value); }
+          if (s.key === 'livestream_pinned_message') { setPinnedMessage(s.value); setEditPinnedMessage(s.value); }
         });
       }
     };
@@ -221,18 +238,13 @@ const LiveStream = () => {
     toast.success(`Moderator ${code} dicabut!`);
   };
 
-  // Viewer tracking - heartbeat
+  // Viewer tracking
   useEffect(() => {
     if (!user || !liveActive) return;
-
     void registerViewerHeartbeat();
-    heartbeatRef.current = setInterval(() => {
-      void registerViewerHeartbeat();
-    }, 10000);
-
+    heartbeatRef.current = setInterval(() => { void registerViewerHeartbeat(); }, 10000);
     return () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      // Remove viewer on unmount
       void supabase.from('livestream_viewers' as any).delete().eq('user_id', user.id);
     };
   }, [user, liveActive, registerViewerHeartbeat]);
@@ -240,20 +252,11 @@ const LiveStream = () => {
   // Count viewers realtime
   useEffect(() => {
     void loadViewers();
-    const interval = setInterval(() => {
-      void loadViewers();
-    }, 5000);
-
+    const interval = setInterval(() => { void loadViewers(); }, 5000);
     const ch = supabase.channel('livestream-viewers')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_viewers' }, () => {
-        void loadViewers();
-      })
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'livestream_viewers' }, () => { void loadViewers(); })
       .subscribe();
-
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(ch);
-    };
+    return () => { clearInterval(interval); supabase.removeChannel(ch); };
   }, [loadViewers]);
 
   // Load comments
@@ -263,7 +266,6 @@ const LiveStream = () => {
       if (data) setComments(data as unknown as LiveComment[]);
     };
     loadComments();
-
     const ch = supabase.channel('livestream-comments')
       .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'livestream_comments' }, (payload: any) => {
         setComments(prev => {
@@ -283,44 +285,23 @@ const LiveStream = () => {
   }, [comments]);
 
   const lockLandscape = useCallback(async () => {
-    const orientation = (screen as Screen & {
-      orientation?: { lock?: (mode: 'landscape' | 'portrait') => Promise<void>; unlock?: () => void };
-    }).orientation;
-
-    if (orientation?.lock) {
-      try {
-        await orientation.lock('landscape');
-      } catch {
-        // ignore: not supported on some devices
-      }
-    }
+    const orientation = (screen as any).orientation;
+    if (orientation?.lock) { try { await orientation.lock('landscape'); } catch {} }
   }, []);
 
   const unlockOrientation = useCallback(() => {
-    const orientation = (screen as Screen & {
-      orientation?: { unlock?: () => void };
-    }).orientation;
-
-    if (orientation?.unlock) {
-      try {
-        orientation.unlock();
-      } catch {
-        // ignore: not supported on some devices
-      }
-    }
+    const orientation = (screen as any).orientation;
+    if (orientation?.unlock) { try { orientation.unlock(); } catch {} }
   }, []);
 
-  // Fullscreen handling
   useEffect(() => {
     const handleFSChange = () => {
-      const isFs = !!document.fullscreenElement || !!(document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement;
+      const isFs = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
       setIsFullscreen(isFs);
       if (!isFs) unlockOrientation();
     };
-
     document.addEventListener('fullscreenchange', handleFSChange);
     document.addEventListener('webkitfullscreenchange', handleFSChange as EventListener);
-
     return () => {
       document.removeEventListener('fullscreenchange', handleFSChange);
       document.removeEventListener('webkitfullscreenchange', handleFSChange as EventListener);
@@ -330,23 +311,12 @@ const LiveStream = () => {
   const getYouTubeEmbedUrl = (rawUrl: string) => {
     const input = rawUrl.trim();
     if (!input) return '';
-
     const origin = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : '';
     const baseParams = [
-      'autoplay=1',
-      'mute=1',
-      'controls=0',
-      'fs=0',
-      'modestbranding=1',
-      'rel=0',
-      'iv_load_policy=3',
-      'disablekb=1',
-      'playsinline=1',
-      'enablejsapi=1',
+      'autoplay=1', 'mute=1', 'controls=0', 'fs=0', 'modestbranding=1',
+      'rel=0', 'iv_load_policy=3', 'disablekb=1', 'playsinline=1', 'enablejsapi=1',
       origin ? `origin=${origin}` : '',
-    ]
-      .filter(Boolean)
-      .join('&');
+    ].filter(Boolean).join('&');
 
     const withScheme = /^https?:\/\//i.test(input) ? input : `https://${input}`;
 
@@ -357,48 +327,33 @@ const LiveStream = () => {
     try {
       const parsed = new URL(withScheme);
       const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
-
       if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
-        const channelIdFromPath = parsed.pathname.match(/\/channel\/(UC[\w-]+)/)?.[1];
-        const channelIdFromQuery = parsed.searchParams.get('channel');
-        const channelId = channelIdFromPath || channelIdFromQuery;
-
+        const channelId = parsed.pathname.match(/\/channel\/(UC[\w-]+)/)?.[1] || parsed.searchParams.get('channel');
         if (channelId && channelId.startsWith('UC')) {
           return `https://www.youtube.com/embed/live_stream?channel=${channelId}&${baseParams}`;
         }
       }
-    } catch {
-      // ignore channel URL parse errors
-    }
+    } catch {}
 
     const extractVideoId = (url: string): string | null => {
       if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
-
       try {
         const parsed = new URL(url);
         const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
-
-        if (host === 'youtu.be') {
-          return parsed.pathname.split('/').filter(Boolean)[0] || null;
-        }
-
+        if (host === 'youtu.be') return parsed.pathname.split('/').filter(Boolean)[0] || null;
         if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
           if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
           if (parsed.pathname.startsWith('/live/')) return parsed.pathname.split('/live/')[1]?.split('/')[0] || null;
           if (parsed.pathname.startsWith('/shorts/')) return parsed.pathname.split('/shorts/')[1]?.split('/')[0] || null;
           if (parsed.pathname.startsWith('/embed/')) return parsed.pathname.split('/embed/')[1]?.split('/')[0] || null;
         }
-      } catch {
-        // fallback regex below
-      }
-
+      } catch {}
       const fallback = url.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
       return fallback?.[1] || null;
     };
 
     const videoId = extractVideoId(withScheme);
     if (!videoId) return '';
-
     return `https://www.youtube.com/embed/${videoId}?${baseParams}`;
   };
 
@@ -408,38 +363,18 @@ const LiveStream = () => {
     if (!newComment.trim() || sending || !user) return;
     const commentText = newComment.trim();
     const tempId = `temp-${Date.now()}`;
-
-    setComments(prev => [
-      ...prev,
-      {
-        id: tempId,
-        user_id: user.id,
-        username: fallbackUsername,
-        profile_photo: profile?.profile_photo ?? null,
-        content: commentText,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    setComments(prev => [...prev, { id: tempId, user_id: user.id, username: fallbackUsername, profile_photo: profile?.profile_photo ?? null, content: commentText, created_at: new Date().toISOString() }]);
     setNewComment('');
     setSending(true);
-
     try {
-      const result: any = await supabase.from('livestream_comments' as any).insert({
-        user_id: user.id,
-        username: fallbackUsername,
-        profile_photo: profile?.profile_photo ?? null,
-        content: commentText,
-      } as any).select('*').single();
-
+      const result: any = await supabase.from('livestream_comments' as any).insert({ user_id: user.id, username: fallbackUsername, profile_photo: profile?.profile_photo ?? null, content: commentText } as any).select('*').single();
       const { data, error } = result;
-
       if (error) {
         setComments(prev => prev.filter(c => c.id !== tempId));
         toast.error('Gagal mengirim komentar');
         setNewComment(commentText);
         return;
       }
-
       if (data) {
         setComments(prev => {
           const withoutTemp = prev.filter(c => c.id !== tempId);
@@ -451,9 +386,7 @@ const LiveStream = () => {
       setComments(prev => prev.filter(c => c.id !== tempId));
       toast.error('Koneksi chat bermasalah, coba lagi');
       setNewComment(commentText);
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   };
 
   const handleDeleteComment = async (id: string) => {
@@ -466,6 +399,8 @@ const LiveStream = () => {
       supabase.from('app_settings').upsert({ key: 'livestream_url', value: editUrl }),
       supabase.from('app_settings').upsert({ key: 'livestream_title', value: editTitle }),
       supabase.from('app_settings').upsert({ key: 'livestream_description', value: editDesc }),
+      supabase.from('app_settings').upsert({ key: 'livestream_logo', value: editLogo }),
+      supabase.from('app_settings').upsert({ key: 'livestream_pinned_message', value: editPinnedMessage }),
     ]);
     toast.success('Pengaturan disimpan!');
     setShowSettings(false);
@@ -475,7 +410,6 @@ const LiveStream = () => {
     const newVal = !liveActive;
     await supabase.from('app_settings').upsert({ key: 'livestream_active', value: String(newVal) });
     if (!newVal) {
-      // Clear viewers when closing live
       await supabase.from('livestream_viewers' as any).delete().neq('user_id', '00000000-0000-0000-0000-000000000000');
     }
     toast.success(newVal ? 'Live diaktifkan!' : 'Live ditutup!');
@@ -501,30 +435,26 @@ const LiveStream = () => {
 
   const toggleFullscreen = async () => {
     if (!videoContainerRef.current) return;
-
-    const el = videoContainerRef.current as HTMLDivElement & {
-      webkitRequestFullscreen?: () => Promise<void> | void;
-      msRequestFullscreen?: () => Promise<void> | void;
-    };
-
-    const doc = document as Document & {
-      webkitExitFullscreen?: () => Promise<void> | void;
-      msExitFullscreen?: () => Promise<void> | void;
-      webkitFullscreenElement?: Element | null;
-    };
-
+    const el = videoContainerRef.current as any;
+    const doc = document as any;
     if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
       if (el.requestFullscreen) await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
-
       await lockLandscape();
     } else {
       unlockOrientation();
       if (document.exitFullscreen) await document.exitFullscreen();
       else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-      else if (doc.msExitFullscreen) await doc.msExitFullscreen();
     }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Maksimal 2MB!'); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => { setEditLogo(reader.result as string); };
+    reader.readAsDataURL(file);
   };
 
   // Not logged in
@@ -536,16 +466,15 @@ const LiveStream = () => {
           <Radio className="w-16 h-16 text-destructive mx-auto mb-4 animate-pulse" />
           <h1 className="text-2xl font-extrabold text-gradient mb-3">Livestreaming Free</h1>
           <p className="text-muted-foreground mb-6">Login terlebih dahulu untuk menonton livestreaming</p>
-          <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-primary text-primary-foreground font-bold">
-            Login Sekarang
-          </Link>
+          <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-primary text-primary-foreground font-bold">Login Sekarang</Link>
         </main>
       </div>
     );
   }
 
-  // Blacklisted user check
   const userCode = (profile as any)?.profile_code;
+
+  // Blacklisted
   if (!isOwner && userCode && blacklistedCodes.has(userCode)) {
     return (
       <div className="min-h-screen bg-background">
@@ -553,14 +482,14 @@ const LiveStream = () => {
         <main className="container mx-auto px-4 py-16 max-w-md text-center">
           <Ban className="w-16 h-16 text-destructive mx-auto mb-4" />
           <h1 className="text-2xl font-extrabold text-gradient mb-3">Akses Diblokir</h1>
-          <p className="text-muted-foreground">Kamu telah di-blacklist dari livestream ini. Hubungi admin untuk info lebih lanjut.</p>
+          <p className="text-muted-foreground">Kamu telah di-blacklist dari livestream ini.</p>
           <p className="text-xs text-muted-foreground mt-2">Kode: #{userCode}</p>
         </main>
       </div>
     );
   }
 
-  // Viewer limit reached
+  // Viewer limit
   if (!isOwner && liveActive && viewerCount >= maxViewers) {
     return (
       <div className="min-h-screen bg-background">
@@ -568,13 +497,13 @@ const LiveStream = () => {
         <main className="container mx-auto px-4 py-16 max-w-md text-center">
           <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-extrabold text-gradient mb-3">Penonton Penuh</h1>
-          <p className="text-muted-foreground">Livestream sudah mencapai batas penonton ({maxViewers}). Coba lagi nanti!</p>
+          <p className="text-muted-foreground">Livestream sudah mencapai batas penonton ({maxViewers}).</p>
         </main>
       </div>
     );
   }
 
-  // Live not active (non-owner)
+  // Not active
   if (!liveActive && !isOwner) {
     return (
       <div className="min-h-screen bg-background">
@@ -582,7 +511,7 @@ const LiveStream = () => {
         <main className="container mx-auto px-4 py-16 max-w-md text-center">
           <Radio className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-extrabold text-gradient mb-3">Tidak Ada Live</h1>
-          <p className="text-muted-foreground">Saat ini tidak ada livestreaming yang sedang berlangsung. Cek lagi nanti!</p>
+          <p className="text-muted-foreground">Saat ini tidak ada livestreaming yang sedang berlangsung.</p>
         </main>
       </div>
     );
@@ -616,9 +545,28 @@ const LiveStream = () => {
                 <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Judul Livestream..." className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
                 <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Deskripsi..." rows={2} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm resize-none" />
                 
-                {/* Max viewers setting */}
+                {/* Logo upload */}
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Batas Penonton Maksimal:</p>
+                  <p className="text-xs text-muted-foreground mb-1">Logo Livestream:</p>
+                  <div className="flex items-center gap-2">
+                    {editLogo && <img src={editLogo} alt="Logo" className="w-8 h-8 rounded-full object-cover" />}
+                    <label className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium cursor-pointer hover:opacity-80">
+                      Upload Logo
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    </label>
+                    {editLogo && <button onClick={() => setEditLogo('')} className="text-xs text-destructive">Hapus</button>}
+                  </div>
+                </div>
+
+                {/* Pinned message */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Pin className="w-3 h-3" /> Pesan Disematkan (bisa mengandung link):</p>
+                  <textarea value={editPinnedMessage} onChange={e => setEditPinnedMessage(e.target.value)} placeholder="Pesan yang disematkan di atas chat... (link akan otomatis bisa diklik)" rows={2} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm resize-none" />
+                </div>
+
+                {/* Max viewers */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Batas Penonton:</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {VIEWER_LIMITS.map(limit => (
                       <button key={limit} onClick={() => handleSetMaxViewers(limit)}
@@ -633,7 +581,7 @@ const LiveStream = () => {
 
                 {/* Moderator management */}
                 <div className="pt-2 border-t border-border/30">
-                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-primary" /> Moderator (kode profil)</p>
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-primary" /> Moderator</p>
                   <div className="flex gap-1.5 mb-1.5">
                     <input value={modInput} onChange={e => setModInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
                     <button onClick={handleAddMod} className="px-3 py-1 rounded-lg gradient-primary text-primary-foreground text-xs font-medium">Tambah</button>
@@ -647,9 +595,9 @@ const LiveStream = () => {
                   </div>
                 </div>
 
-                {/* Blacklist management */}
+                {/* Blacklist */}
                 <div className="pt-2 border-t border-border/30">
-                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Ban className="w-3.5 h-3.5 text-destructive" /> Blacklist Live (kode profil)</p>
+                  <p className="text-xs font-bold text-foreground mb-1.5 flex items-center gap-1"><Ban className="w-3.5 h-3.5 text-destructive" /> Blacklist</p>
                   <div className="flex gap-1.5 mb-1.5">
                     <input value={blacklistInput} onChange={e => setBlacklistInput(e.target.value)} placeholder="Kode profil..." className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-foreground text-xs" />
                     <button onClick={handleAddBlacklist} className="px-3 py-1 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium">Blacklist</button>
@@ -667,23 +615,8 @@ const LiveStream = () => {
           </div>
         )}
 
-        {/* Title + Viewer count */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-1 justify-between">
-            <div className="flex items-center gap-2">
-              {liveActive && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold"><span className="w-2 h-2 rounded-full bg-destructive-foreground animate-pulse" /> LIVE</span>}
-              <h1 className="text-xl font-extrabold text-foreground">{liveTitle || 'Livestreaming'}</h1>
-            </div>
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Users className="w-4 h-4" />
-              <span className="text-sm font-semibold">{viewerCount}</span>
-            </div>
-          </div>
-          {liveDesc && <p className="text-sm text-muted-foreground">{liveDesc}</p>}
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Video Player - Fully Secured */}
+          {/* Video Player */}
           <div className="lg:col-span-2">
             <div ref={videoContainerRef} className={`relative w-full overflow-hidden bg-black ${isFullscreen ? 'fixed inset-0 z-50' : 'rounded-2xl'}`} style={isFullscreen ? {} : { paddingBottom: '56.25%' }}>
               {liveUrl ? (
@@ -699,30 +632,23 @@ const LiveStream = () => {
                     referrerPolicy="strict-origin-when-cross-origin"
                     style={{ border: 'none' }}
                   />
-                  {/* Block all clicks on video */}
                   <div className="absolute inset-0 z-10" />
-
-                  {/* Transparent gradient overlays to soften YouTube UI edges */}
                   <div className="absolute top-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }} />
                   <div className="absolute bottom-0 left-0 right-0 h-12 z-20 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
-
-                  {/* @t48id moving watermark */}
                   <MovingWatermark profileCode={userCode} />
 
+                  {/* User code display on screen */}
+                  {userCode && (
+                    <div className="absolute bottom-3 left-3 z-30 pointer-events-none">
+                      <span className="text-white/20 text-[10px] font-mono font-bold">T4-{userCode}</span>
+                    </div>
+                  )}
+
                   <div className="absolute top-2 right-2 z-40 flex items-center gap-2">
-                    <button
-                      onClick={toggleMute}
-                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition"
-                      aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}
-                    >
+                    <button onClick={toggleMute} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}>
                       {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
-
-                    <button
-                      onClick={toggleFullscreen}
-                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition"
-                      aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}
-                    >
+                    <button onClick={toggleFullscreen} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}>
                       {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                     </button>
                   </div>
@@ -731,7 +657,6 @@ const LiveStream = () => {
                   <div className="absolute inset-0 flex items-center justify-center px-4">
                     <div className="text-center">
                       <p className="text-destructive text-sm font-semibold">URL livestream YouTube tidak valid</p>
-                      <p className="text-xs text-muted-foreground mt-1">Gunakan link format watch, youtu.be, live, shorts, atau embed.</p>
                     </div>
                   </div>
                 )
@@ -743,6 +668,32 @@ const LiveStream = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Stream info section below player */}
+            <div className="mt-3 glass-card rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                {liveLogo && (
+                  <img src={liveLogo} alt="Live Logo" className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-border" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {liveActive && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex-shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-destructive-foreground animate-pulse" /> LIVE
+                        </span>
+                      )}
+                      <h2 className="text-sm font-extrabold text-foreground truncate">{liveTitle || 'Livestreaming'}</h2>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground flex-shrink-0">
+                      <Users className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">{viewerCount}</span>
+                    </div>
+                  </div>
+                  {liveDesc && <p className="text-xs text-muted-foreground mt-1">{liveDesc}</p>}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -756,42 +707,58 @@ const LiveStream = () => {
                 <span className="text-xs text-muted-foreground">{comments.length} pesan</span>
               </div>
 
+              {/* Pinned message */}
+              {pinnedMessage && (
+                <div className="px-3 py-2 border-b border-border/50 bg-accent/5">
+                  <div className="flex items-start gap-1.5">
+                    <Pin className="w-3 h-3 text-accent flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-foreground leading-relaxed">
+                      <RenderWithLinks text={pinnedMessage} />
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-                {comments.map(c => (
-                  <div key={c.id} className="flex gap-2 group">
-                    <div className="flex-shrink-0">
-                      {c.profile_photo ? (
-                        <img src={c.profile_photo} alt="" className="w-6 h-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
-                          {c.username[0]?.toUpperCase()}
-                        </div>
+                {comments.map(c => {
+                  const isCommentOwner = ownerUserIds.has(c.user_id);
+                  const isCommentMod = moderatorUserIds.has(c.user_id);
+                  return (
+                    <div key={c.id} className={`flex gap-2 group ${isCommentOwner ? 'bg-gradient-to-r from-destructive/10 to-transparent rounded-lg px-2 py-1.5 -mx-2' : ''}`}>
+                      <div className="flex-shrink-0">
+                        {c.profile_photo ? (
+                          <img src={c.profile_photo} alt="" className={`w-6 h-6 rounded-full object-cover ${isCommentOwner ? 'ring-2 ring-destructive' : ''}`} />
+                        ) : (
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${isCommentOwner ? 'bg-destructive text-destructive-foreground' : 'gradient-primary text-primary-foreground'}`}>
+                            {c.username[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {isCommentOwner ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
+                            <span className="text-xs font-extrabold text-destructive-foreground">👑 {c.username}</span>
+                            <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
+                          </span>
+                        ) : isCommentMod ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-xs font-bold text-chart-4">{c.username}</span>
+                            <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-primary">{c.username}</span>
+                        )}
+                        <span className={`text-xs ml-1.5 ${isCommentOwner ? 'text-foreground font-semibold' : 'text-foreground'}`}>{c.content}</span>
+                      </div>
+                      {isOwner && (
+                        <button onClick={() => handleDeleteComment(c.id)} className="opacity-0 group-hover:opacity-100 flex-shrink-0 transition">
+                          <X className="w-3 h-3 text-destructive" />
+                        </button>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {ownerUserIds.has(c.user_id) ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-destructive to-destructive/80 shadow-sm shadow-destructive/30">
-                          <span className="text-xs font-bold text-destructive-foreground">{c.username} 👑</span>
-                          <span className="text-[9px] font-medium text-destructive-foreground/80 border-l border-destructive-foreground/30 pl-1">Owner</span>
-                        </span>
-                      ) : moderatorUserIds.has(c.user_id) ? (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="text-xs font-bold text-chart-4">{c.username}</span>
-                          <span className="text-[9px] font-medium text-chart-4/70">Mod</span>
-                        </span>
-                      ) : (
-                        <span className="text-xs font-bold text-primary">{c.username}</span>
-                      )}
-                      <span className="text-xs text-foreground ml-1.5">{c.content}</span>
-                    </div>
-                    {isOwner && (
-                      <button onClick={() => handleDeleteComment(c.id)} className="opacity-0 group-hover:opacity-100 flex-shrink-0 transition">
-                        <X className="w-3 h-3 text-destructive" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={chatEndRef} />
               </div>
 

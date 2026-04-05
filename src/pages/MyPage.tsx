@@ -46,7 +46,8 @@ const MyPage = () => {
     }
   }, [authLoading, user, navigate]);
 
-  if (authLoading || !user || !profile) {
+  // Show loading only while auth is loading, not while waiting for profile
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -55,6 +56,10 @@ const MyPage = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // Will redirect via useEffect
   }
 
   const formatPrice = (price: number) =>
@@ -74,6 +79,12 @@ const MyPage = () => {
     reader.readAsDataURL(file);
   };
 
+  const displayName = profile?.username || user.email?.split('@')[0] || 'User';
+  const displayEmail = profile?.email || user.email || '';
+  const displayPhone = profile?.phone || '';
+  const displayPhoto = profile?.profile_photo;
+  const displayCode = (profile as any)?.profile_code;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -82,11 +93,11 @@ const MyPage = () => {
           <div className="glass-card rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
-                {profile.profile_photo ? (
-                  <img src={profile.profile_photo} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+                {displayPhoto ? (
+                  <img src={displayPhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
                 ) : (
                   <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                    {profile.username[0].toUpperCase()}
+                    {displayName[0]?.toUpperCase() || '?'}
                   </div>
                 )}
                 <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:opacity-80 transition">
@@ -95,12 +106,12 @@ const MyPage = () => {
                 </label>
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-extrabold text-foreground">{profile.username}</h1>
-                {(profile as any).profile_code && (
-                  <p className="text-xs font-mono font-bold text-primary">#{(profile as any).profile_code}</p>
+                <h1 className="text-2xl font-extrabold text-foreground">{displayName}</h1>
+                {displayCode && (
+                  <p className="text-xs font-mono font-bold text-primary">#{displayCode}</p>
                 )}
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
-                <p className="text-sm text-muted-foreground">{profile.phone}</p>
+                <p className="text-sm text-muted-foreground">{displayEmail}</p>
+                {displayPhone && <p className="text-sm text-muted-foreground">{displayPhone}</p>}
                 {userLevel && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <Star className="w-4 h-4 text-warning" />
@@ -123,7 +134,6 @@ const MyPage = () => {
                   return `Topup ${coinsNeeded} koin lagi untuk naik ke Level ${lv + 1}`;
                 })()}
               </div>
-              {/* Current level reward */}
               {(() => {
                 const reward = levelRewards.find((r: any) => r.level === userLevel.level);
                 return reward?.reward_name ? (

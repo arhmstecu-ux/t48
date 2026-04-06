@@ -91,8 +91,8 @@ const MyPage = () => {
           <div className="glass-card rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
-                {displayPhoto ? (
-                  <img src={displayPhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+                {profile?.profile_photo ? (
+                  <img src={profile.profile_photo} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
                 ) : (
                   <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
                     {displayName[0]?.toUpperCase() || '?'}

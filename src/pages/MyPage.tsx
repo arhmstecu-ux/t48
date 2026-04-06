@@ -107,8 +107,10 @@ const MyPage = () => {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-extrabold text-foreground">{displayName}</h1>
-                {displayCode && (
-                  <p className="text-xs font-mono font-bold text-primary">#{displayCode}</p>
+                {profile?.profile_code && (
+                  <div className="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                    <span className="text-xs font-mono font-bold text-primary">#{profile.profile_code}</span>
+                  </div>
                 )}
                 <p className="text-sm text-muted-foreground">{displayEmail}</p>
                 {displayPhone && <p className="text-sm text-muted-foreground">{displayPhone}</p>}

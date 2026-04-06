@@ -170,6 +170,40 @@ const CoinTopup = () => {
               ))}
             </div>
 
+            {/* Custom coin amount */}
+            <div className="mt-4 glass-card rounded-xl p-4">
+              <p className="text-sm font-bold text-foreground mb-2">Jumlah Custom</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number"
+                  min={1}
+                  max={80}
+                  placeholder="1-80 koin"
+                  className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      const val = parseInt((e.target as HTMLInputElement).value);
+                      if (val >= 1 && val <= 80) handleSelectPackage({ coins: val, price: val * 2500 });
+                      else toast.error('Jumlah koin harus 1-80');
+                    }
+                  }}
+                  id="custom-coin-input"
+                />
+                <button
+                  onClick={() => {
+                    const input = document.getElementById('custom-coin-input') as HTMLInputElement;
+                    const val = parseInt(input?.value);
+                    if (val >= 1 && val <= 80) handleSelectPackage({ coins: val, price: val * 2500 });
+                    else toast.error('Jumlah koin harus 1-80');
+                  }}
+                  className="px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-bold"
+                >
+                  Pilih
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">Masukkan jumlah koin yang diinginkan (maks 80)</p>
+            </div>
+
             {/* History */}
             {myRequests.length > 0 && (
               <div className="mt-8">

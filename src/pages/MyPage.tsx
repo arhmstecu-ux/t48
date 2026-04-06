@@ -82,8 +82,6 @@ const MyPage = () => {
   const displayName = profile?.username || user.email?.split('@')[0] || 'User';
   const displayEmail = profile?.email || user.email || '';
   const displayPhone = profile?.phone || '';
-  const displayPhoto = profile?.profile_photo;
-  const displayCode = (profile as any)?.profile_code;
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,8 +91,8 @@ const MyPage = () => {
           <div className="glass-card rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
-                {displayPhoto ? (
-                  <img src={displayPhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+                {profile?.profile_photo ? (
+                  <img src={profile.profile_photo} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
                 ) : (
                   <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
                     {displayName[0]?.toUpperCase() || '?'}
@@ -107,8 +105,10 @@ const MyPage = () => {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-extrabold text-foreground">{displayName}</h1>
-                {displayCode && (
-                  <p className="text-xs font-mono font-bold text-primary">#{displayCode}</p>
+                {profile?.profile_code && (
+                  <div className="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                    <span className="text-xs font-mono font-bold text-primary">#{profile.profile_code}</span>
+                  </div>
                 )}
                 <p className="text-sm text-muted-foreground">{displayEmail}</p>
                 {displayPhone && <p className="text-sm text-muted-foreground">{displayPhone}</p>}

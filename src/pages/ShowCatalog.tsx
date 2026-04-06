@@ -372,10 +372,7 @@ const ShowCatalog = () => {
                           <Coins className="w-5 h-5" /> Beli dengan {selectedProduct.coin_price} Koin
                         </button>
                       )}
-                      <button onClick={() => openBuyModal('qris')}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl gradient-primary text-primary-foreground font-bold text-base hover:opacity-90 transition-opacity">
-                        <CreditCard className="w-5 h-5" /> Beli QRIS — {formatPrice(selectedProduct.price)}
-                      </button>
+                      {/* QRIS temporarily disabled */}
                     </div>
 
                     <ReviewSection productId={selectedProduct.id} productName={selectedProduct.name} />

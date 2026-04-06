@@ -104,6 +104,8 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
     );
   }
   return <>{children}</>;
+};
+
 const NotificationListener = () => { useBrowserNotifications(); return null; };
 
 const App = () => (

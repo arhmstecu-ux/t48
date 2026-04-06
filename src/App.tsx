@@ -115,6 +115,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NotificationListener />
           <CartProvider>
             <MaintenanceGuard>
               <Routes>

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -103,7 +104,7 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
     );
   }
   return <>{children}</>;
-};
+const NotificationListener = () => { useBrowserNotifications(); return null; };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

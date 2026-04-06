@@ -167,6 +167,17 @@ const Index = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* Trust badge */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+            className="max-w-3xl mx-auto mt-8 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/50">
+              <span className="text-base">🛡️</span>
+              <span className="text-xs text-muted-foreground font-medium">Website ini aman & bebas virus — 100% terpercaya</span>
+              <span className="text-base">✅</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">@t48id</p>
+          </motion.div>
         </main>
       </div>
 

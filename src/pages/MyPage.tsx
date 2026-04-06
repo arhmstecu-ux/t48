@@ -82,8 +82,6 @@ const MyPage = () => {
   const displayName = profile?.username || user.email?.split('@')[0] || 'User';
   const displayEmail = profile?.email || user.email || '';
   const displayPhone = profile?.phone || '';
-  const displayPhoto = profile?.profile_photo;
-  const displayCode = (profile as any)?.profile_code;
 
   return (
     <div className="min-h-screen bg-background">

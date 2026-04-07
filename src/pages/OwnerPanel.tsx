@@ -227,6 +227,7 @@ const OwnerPanel = () => {
     { key: 'live' as const, label: 'Live' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },
+    { key: 'admins' as const, label: '🛡️ Admin' },
   ];
 
   return (
@@ -649,6 +650,51 @@ const OwnerPanel = () => {
         )}
 
         {tab === 'coins' && <CoinPanel />}
+
+        {tab === 'admins' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-bold text-foreground mb-4">🛡️ Kelola Admin</h2>
+
+            {/* Add new admin */}
+            <div className="glass-card rounded-2xl p-4 mb-4 space-y-3">
+              <h3 className="font-bold text-foreground text-sm">Tambah Admin Baru</h3>
+              <input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="Email admin baru" type="email" className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+              <input value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} placeholder="Password admin baru" type="text" className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm" />
+              <button disabled={adminLoading || !newAdminEmail || !newAdminPassword} onClick={async () => {
+                setAdminLoading(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('manage-admin', { body: { action: 'create_admin', email: newAdminEmail, password: newAdminPassword } });
+                  if (error || data?.error) { toast.error(data?.error || 'Gagal menambah admin'); }
+                  else { toast.success('Admin berhasil ditambahkan!'); setNewAdminEmail(''); setNewAdminPassword(''); loadAdmins(); }
+                } catch { toast.error('Error'); }
+                setAdminLoading(false);
+              }} className="w-full py-2 rounded-xl gradient-primary text-primary-foreground font-bold text-sm disabled:opacity-50">
+                {adminLoading ? 'Memproses...' : '➕ Tambah Admin'}
+              </button>
+            </div>
+
+            {/* Admin list */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-foreground text-sm mb-2">Daftar Admin ({adminList.length})</h3>
+              {adminList.map(a => (
+                <div key={a.user_id} className="glass-card rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-foreground text-sm">{a.username || 'Unknown'}</p>
+                    <p className="text-xs text-muted-foreground">{a.email} {a.profile_code ? `• #${a.profile_code}` : ''}</p>
+                  </div>
+                  {a.user_id !== user?.id && (
+                    <button onClick={async () => {
+                      if (!confirm(`Hapus ${a.email} dari admin?`)) return;
+                      await supabase.functions.invoke('manage-admin', { body: { action: 'remove_admin', user_id: a.user_id } });
+                      toast.success('Admin dihapus');
+                      loadAdmins();
+                    }} className="px-3 py-1 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition">Hapus</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </main>
     </div>
   );

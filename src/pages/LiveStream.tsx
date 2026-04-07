@@ -810,6 +810,12 @@ const LiveStream = () => {
                   <p className="text-xs text-muted-foreground">💬 Chat dinonaktifkan oleh admin</p>
                 </div>
               )}
+              {/* Buy Replay button */}
+              <div className="px-3 py-2 border-t border-border/50">
+                <Link to="/replay" className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-semibold text-sm transition">
+                  <Play className="w-4 h-4" /> Beli Replay
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -94,6 +94,8 @@ const LiveStream = () => {
   const [maxViewers, setMaxViewers] = useState(750);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [resolution, setResolution] = useState<string>('auto');
+  const [showResMenu, setShowResMenu] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);

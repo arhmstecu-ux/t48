@@ -18,7 +18,11 @@ const SLIDER_KEYS = ['home_slider_1', 'home_slider_2', 'home_slider_3', 'home_sl
 const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels' | 'admins'>('products');
+  const [adminList, setAdminList] = useState<any[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' });
   const [showAdd, setShowAdd] = useState(false);
   const [viewUserId, setViewUserId] = useState<string | null>(null);

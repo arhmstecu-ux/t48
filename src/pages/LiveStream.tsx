@@ -656,6 +656,24 @@ const LiveStream = () => {
                     <button onClick={toggleMute} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}>
                       {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
+                    <div className="relative">
+                      <button onClick={() => setShowResMenu(!showResMenu)} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label="Resolusi">
+                        <MonitorSmartphone className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {showResMenu && (
+                          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                            className="absolute right-0 top-full mt-1 bg-black/90 rounded-lg overflow-hidden min-w-[100px] z-50 border border-white/10">
+                            {['auto', '360', '480', '720', '1080'].map(q => (
+                              <button key={q} onClick={() => { setResolution(q); setShowResMenu(false); }}
+                                className={`block w-full text-left px-3 py-1.5 text-xs font-medium transition ${resolution === q ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
+                                {q === 'auto' ? 'Otomatis' : `${q}p`}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     <button onClick={toggleFullscreen} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}>
                       {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                     </button>

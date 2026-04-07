@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield, Pin, Link as LinkIcon } from 'lucide-react';
+import { Radio, Send, MessageCircle, Settings, X, Users, Maximize, Minimize, Volume2, VolumeX, Ban, Shield, Pin, Link as LinkIcon, Play, MonitorSmartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
@@ -94,6 +94,8 @@ const LiveStream = () => {
   const [maxViewers, setMaxViewers] = useState(750);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [resolution, setResolution] = useState<string>('auto');
+  const [showResMenu, setShowResMenu] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -357,7 +359,13 @@ const LiveStream = () => {
     return `https://www.youtube.com/embed/${videoId}?${baseParams}`;
   };
 
-  const embedUrl = useMemo(() => getYouTubeEmbedUrl(liveUrl), [liveUrl]);
+  const embedUrl = useMemo(() => {
+    const base = getYouTubeEmbedUrl(liveUrl);
+    if (!base || resolution === 'auto') return base;
+    const qualityMap: Record<string, string> = { '360': 'small', '480': 'medium', '720': 'hd720', '1080': 'hd1080' };
+    const vq = qualityMap[resolution];
+    return vq ? `${base}&vq=${vq}` : base;
+  }, [liveUrl, resolution]);
 
   const handleSendComment = async () => {
     if (!newComment.trim() || sending || !user) return;
@@ -648,6 +656,24 @@ const LiveStream = () => {
                     <button onClick={toggleMute} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isMuted ? 'Nyalakan suara' : 'Matikan suara'}>
                       {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
+                    <div className="relative">
+                      <button onClick={() => setShowResMenu(!showResMenu)} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label="Resolusi">
+                        <MonitorSmartphone className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {showResMenu && (
+                          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                            className="absolute right-0 top-full mt-1 bg-black/90 rounded-lg overflow-hidden min-w-[100px] z-50 border border-white/10">
+                            {['auto', '360', '480', '720', '1080'].map(q => (
+                              <button key={q} onClick={() => { setResolution(q); setShowResMenu(false); }}
+                                className={`block w-full text-left px-3 py-1.5 text-xs font-medium transition ${resolution === q ? 'text-primary bg-white/10' : 'text-white hover:bg-white/10'}`}>
+                                {q === 'auto' ? 'Otomatis' : `${q}p`}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     <button onClick={toggleFullscreen} className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition" aria-label={isFullscreen ? 'Keluar fullscreen' : 'Masuk fullscreen'}>
                       {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                     </button>
@@ -784,6 +810,12 @@ const LiveStream = () => {
                   <p className="text-xs text-muted-foreground">💬 Chat dinonaktifkan oleh admin</p>
                 </div>
               )}
+              {/* Buy Replay button */}
+              <div className="px-3 py-2 border-t border-border/50">
+                <Link to="/replay" className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-semibold text-sm transition">
+                  <Play className="w-4 h-4" /> Beli Replay
+                </Link>
+              </div>
             </div>
           </div>
         </div>

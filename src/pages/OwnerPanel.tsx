@@ -218,7 +218,7 @@ const OwnerPanel = () => {
   };
   useEffect(() => { if (tab === 'admins') loadAdmins(); }, [tab]);
 
-
+  const tabs = [
     { key: 'products' as const, label: 'Produk' },
     { key: 'users' as const, label: `Anggota (${profiles.length})` },
     { key: 'orders' as const, label: 'Pesanan' },

@@ -212,7 +212,13 @@ const OwnerPanel = () => {
   const formatPrice = (price: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
   const filteredUsers = profiles.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()) || ((u as any).profile_code || '').toLowerCase().includes(searchUser.toLowerCase().replace('#', '')));
 
-  const tabs = [
+  const loadAdmins = async () => {
+    const { data } = await supabase.functions.invoke('manage-admin', { body: { action: 'list_admins' } });
+    if (data?.admins) setAdminList(data.admins);
+  };
+  useEffect(() => { if (tab === 'admins') loadAdmins(); }, [tab]);
+
+
     { key: 'products' as const, label: 'Produk' },
     { key: 'users' as const, label: `Anggota (${profiles.length})` },
     { key: 'orders' as const, label: 'Pesanan' },

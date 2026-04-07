@@ -27,6 +27,7 @@ import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import AdminPanelPage from "./pages/AdminPanelPage";
+import NotificationPermissionBanner from "./components/NotificationPermissionBanner";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <NotificationListener />
+          <NotificationPermissionBanner />
           <CartProvider>
             <MaintenanceGuard>
               <Routes>

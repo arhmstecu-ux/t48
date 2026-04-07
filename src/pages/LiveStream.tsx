@@ -359,7 +359,13 @@ const LiveStream = () => {
     return `https://www.youtube.com/embed/${videoId}?${baseParams}`;
   };
 
-  const embedUrl = useMemo(() => getYouTubeEmbedUrl(liveUrl), [liveUrl]);
+  const embedUrl = useMemo(() => {
+    const base = getYouTubeEmbedUrl(liveUrl);
+    if (!base || resolution === 'auto') return base;
+    const qualityMap: Record<string, string> = { '360': 'small', '480': 'medium', '720': 'hd720', '1080': 'hd1080' };
+    const vq = qualityMap[resolution];
+    return vq ? `${base}&vq=${vq}` : base;
+  }, [liveUrl, resolution]);
 
   const handleSendComment = async () => {
     if (!newComment.trim() || sending || !user) return;

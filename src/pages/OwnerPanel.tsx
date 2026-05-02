@@ -562,6 +562,13 @@ const OwnerPanel = () => {
           </motion.div>
         )}
 
+        {tab === 'paidlive' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><Radio className="w-5 h-5 text-primary" /> Live Berbayar</h2>
+            <PaidLivePanel />
+          </motion.div>
+        )}
+
         {tab === 'logo' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5 text-primary" /> Logo Website</h2>

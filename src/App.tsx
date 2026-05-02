@@ -23,6 +23,7 @@ import AdminLogin from "./pages/AdminLogin";
 import GroupChat from "./pages/GroupChat";
 import SpinWheel from "./pages/SpinWheel";
 import LiveStream from "./pages/LiveStream";
+import PaidLiveStream from "./pages/PaidLiveStream";
 import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -137,6 +138,7 @@ const App = () => (
                 <Route path="/group-chat" element={<GroupChat />} />
                 <Route path="/spin" element={<SpinWheel />} />
                 <Route path="/live" element={<LiveStream />} />
+                <Route path="/live-paid" element={<PaidLiveStream />} />
                 <Route path="/coin-topup" element={<CoinTopup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/admin-panel" element={<AdminPanelPage />} />

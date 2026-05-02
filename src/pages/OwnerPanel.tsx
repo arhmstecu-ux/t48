@@ -7,6 +7,7 @@ import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import type { Tables } from '@/integrations/supabase/types';
 import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon, Coins, Star } from 'lucide-react';
 import CoinPanel from '@/components/CoinPanel';
+import PaidLivePanel from '@/components/PaidLivePanel';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -18,7 +19,7 @@ const SLIDER_KEYS = ['home_slider_1', 'home_slider_2', 'home_slider_3', 'home_sl
 const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'spintransfer' | 'coins' | 'levels' | 'admins'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'paidlive' | 'spintransfer' | 'coins' | 'levels' | 'admins'>('products');
   const [adminList, setAdminList] = useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
@@ -231,6 +232,7 @@ const OwnerPanel = () => {
     { key: 'coins' as const, label: '🪙 Koin' },
     { key: 'levels' as const, label: '⭐ Level' },
     { key: 'live' as const, label: 'Live' },
+    { key: 'paidlive' as const, label: '💎 Live Berbayar' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },
     { key: 'admins' as const, label: '🛡️ Admin' },
@@ -557,6 +559,13 @@ const OwnerPanel = () => {
               <textarea value={liveDesc} onChange={e => setLiveDesc(e.target.value)} placeholder="Deskripsi..." rows={3} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground text-sm resize-none" />
               <button onClick={handleSaveLive} className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground font-medium">Simpan Pengaturan</button>
             </div>
+          </motion.div>
+        )}
+
+        {tab === 'paidlive' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><Radio className="w-5 h-5 text-primary" /> Live Berbayar</h2>
+            <PaidLivePanel />
           </motion.div>
         )}
 

@@ -356,6 +356,99 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_livestream_access: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
+      paid_livestream_chat: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          profile_photo: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          profile_photo?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          profile_photo?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      paid_livestream_settings: {
+        Row: {
+          active_server: string
+          background_url: string
+          description: string
+          id: string
+          is_live: boolean
+          logo_url: string
+          m3u8_url: string
+          start_time: string | null
+          title: string
+          updated_at: string
+          youtube_url: string
+        }
+        Insert: {
+          active_server?: string
+          background_url?: string
+          description?: string
+          id?: string
+          is_live?: boolean
+          logo_url?: string
+          m3u8_url?: string
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+          youtube_url?: string
+        }
+        Update: {
+          active_server?: string
+          background_url?: string
+          description?: string
+          id?: string
+          is_live?: boolean
+          logo_url?: string
+          m3u8_url?: string
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+          youtube_url?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

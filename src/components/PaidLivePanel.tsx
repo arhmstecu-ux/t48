@@ -33,6 +33,39 @@ const PaidLivePanel = () => {
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImage = async (file: File, kind: "logo" | "bg") => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("Maks 5MB"); return null; }
+    if (!file.type.startsWith("image/")) { toast.error("File harus gambar"); return null; }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${kind}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("paid-live").upload(path, file, { upsert: true, cacheControl: "3600" });
+    if (error) { toast.error("Gagal upload: " + error.message); return null; }
+    const { data } = supabase.storage.from("paid-live").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !s) return;
+    setUploadingLogo(true);
+    const url = await uploadImage(f, "logo");
+    if (url) setS({ ...s, logo_url: url });
+    setUploadingLogo(false);
+    e.target.value = "";
+  };
+
+  const handleBgFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !s) return;
+    setUploadingBg(true);
+    const url = await uploadImage(f, "bg");
+    if (url) setS({ ...s, background_url: url });
+    setUploadingBg(false);
+    e.target.value = "";
+  };
 
   const load = async () => {
     const [{ data: settings }, { data: access }] = await Promise.all([

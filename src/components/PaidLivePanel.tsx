@@ -192,12 +192,40 @@ const PaidLivePanel = () => {
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium">URL Logo</label>
-            <Input value={s.logo_url} onChange={e => setS({ ...s, logo_url: e.target.value })} />
+            <label className="text-xs font-medium">Logo</label>
+            <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoFile} className="hidden" />
+            <div className="mt-1 flex items-center gap-2">
+              {s.logo_url && (
+                <div className="relative">
+                  <img src={s.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-cover border" />
+                  <button onClick={() => setS({ ...s, logo_url: "" })}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                <Upload className="w-3 h-3 mr-1" /> {uploadingLogo ? "Upload..." : "Pilih"}
+              </Button>
+            </div>
           </div>
           <div>
-            <label className="text-xs font-medium">URL Background (countdown)</label>
-            <Input value={s.background_url} onChange={e => setS({ ...s, background_url: e.target.value })} />
+            <label className="text-xs font-medium">Background countdown</label>
+            <input ref={bgInputRef} type="file" accept="image/*" onChange={handleBgFile} className="hidden" />
+            <div className="mt-1 flex items-center gap-2">
+              {s.background_url && (
+                <div className="relative">
+                  <img src={s.background_url} alt="bg" className="w-20 h-12 rounded-lg object-cover border" />
+                  <button onClick={() => setS({ ...s, background_url: "" })}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              <Button size="sm" variant="outline" onClick={() => bgInputRef.current?.click()} disabled={uploadingBg}>
+                <Upload className="w-3 h-3 mr-1" /> {uploadingBg ? "Upload..." : "Pilih"}
+              </Button>
+            </div>
           </div>
         </div>
 

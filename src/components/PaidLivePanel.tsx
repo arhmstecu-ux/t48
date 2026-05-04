@@ -79,13 +79,24 @@ const PaidLivePanel = () => {
       toast.error("Email tidak valid");
       return;
     }
-    const expires = new Date();
-    expires.setDate(expires.getDate() + Math.max(1, newDays));
+    const days = Math.max(1, newDays);
+    const expires = new Date(Date.now() + days * 86400000);
+    // Optimistic UI update so user doesn't feel any delay
+    const tempId = `tmp-${Date.now()}`;
+    setList(prev => {
+      const without = prev.filter(a => a.email.toLowerCase() !== email);
+      return [{ id: tempId, email, expires_at: expires.toISOString(), note: `${days} hari` }, ...without];
+    });
+    setNewEmail("");
     const { error } = await supabase.from("paid_livestream_access").upsert({
-      email, expires_at: expires.toISOString(), note: `${newDays} hari`,
+      email, expires_at: expires.toISOString(), note: `${days} hari`,
     }, { onConflict: "email" });
-    if (error) toast.error(error.message);
-    else { toast.success(`${email} → ${newDays} hari`); setNewEmail(""); }
+    if (error) {
+      setList(prev => prev.filter(a => a.id !== tempId));
+      toast.error(error.message);
+    } else {
+      toast.success(`${email} → ${days} hari`);
+    }
   };
 
   const removeAccess = async (id: string) => {

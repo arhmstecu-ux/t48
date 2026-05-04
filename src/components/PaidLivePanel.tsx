@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Upload, X } from "lucide-react";
+import { useRef } from "react";
 
 interface Settings {
   id?: string;
@@ -32,6 +33,39 @@ const PaidLivePanel = () => {
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImage = async (file: File, kind: "logo" | "bg") => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("Maks 5MB"); return null; }
+    if (!file.type.startsWith("image/")) { toast.error("File harus gambar"); return null; }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${kind}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("paid-live").upload(path, file, { upsert: true, cacheControl: "3600" });
+    if (error) { toast.error("Gagal upload: " + error.message); return null; }
+    const { data } = supabase.storage.from("paid-live").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !s) return;
+    setUploadingLogo(true);
+    const url = await uploadImage(f, "logo");
+    if (url) setS({ ...s, logo_url: url });
+    setUploadingLogo(false);
+    e.target.value = "";
+  };
+
+  const handleBgFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !s) return;
+    setUploadingBg(true);
+    const url = await uploadImage(f, "bg");
+    if (url) setS({ ...s, background_url: url });
+    setUploadingBg(false);
+    e.target.value = "";
+  };
 
   const load = async () => {
     const [{ data: settings }, { data: access }] = await Promise.all([
@@ -158,12 +192,40 @@ const PaidLivePanel = () => {
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium">URL Logo</label>
-            <Input value={s.logo_url} onChange={e => setS({ ...s, logo_url: e.target.value })} />
+            <label className="text-xs font-medium">Logo</label>
+            <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoFile} className="hidden" />
+            <div className="mt-1 flex items-center gap-2">
+              {s.logo_url && (
+                <div className="relative">
+                  <img src={s.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-cover border" />
+                  <button onClick={() => setS({ ...s, logo_url: "" })}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                <Upload className="w-3 h-3 mr-1" /> {uploadingLogo ? "Upload..." : "Pilih"}
+              </Button>
+            </div>
           </div>
           <div>
-            <label className="text-xs font-medium">URL Background (countdown)</label>
-            <Input value={s.background_url} onChange={e => setS({ ...s, background_url: e.target.value })} />
+            <label className="text-xs font-medium">Background countdown</label>
+            <input ref={bgInputRef} type="file" accept="image/*" onChange={handleBgFile} className="hidden" />
+            <div className="mt-1 flex items-center gap-2">
+              {s.background_url && (
+                <div className="relative">
+                  <img src={s.background_url} alt="bg" className="w-20 h-12 rounded-lg object-cover border" />
+                  <button onClick={() => setS({ ...s, background_url: "" })}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              <Button size="sm" variant="outline" onClick={() => bgInputRef.current?.click()} disabled={uploadingBg}>
+                <Upload className="w-3 h-3 mr-1" /> {uploadingBg ? "Upload..." : "Pilih"}
+              </Button>
+            </div>
           </div>
         </div>
 

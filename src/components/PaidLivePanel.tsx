@@ -27,6 +27,21 @@ interface Access {
   note: string | null;
 }
 
+interface TokenRow {
+  id: string;
+  token: string;
+  label: string | null;
+  expires_at: string;
+  banned: boolean;
+}
+
+const randToken = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+};
+
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Access[]>([]);

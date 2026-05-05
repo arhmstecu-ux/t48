@@ -449,6 +449,36 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_livestream_tokens: {
+        Row: {
+          banned: boolean
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          label: string | null
+          token: string
+        }
+        Insert: {
+          banned?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          label?: string | null
+          token: string
+        }
+        Update: {
+          banned?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          label?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

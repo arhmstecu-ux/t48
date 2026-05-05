@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Plus, Upload, X } from "lucide-react";
+import { Trash2, Plus, Upload, X, Copy, Ban, CheckCircle2 } from "lucide-react";
 import { useRef } from "react";
 
 interface Settings {
@@ -27,11 +27,29 @@ interface Access {
   note: string | null;
 }
 
+interface TokenRow {
+  id: string;
+  token: string;
+  label: string | null;
+  expires_at: string;
+  banned: boolean;
+}
+
+const randToken = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+};
+
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Access[]>([]);
+  const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
+  const [newTokenLabel, setNewTokenLabel] = useState("");
+  const [newTokenDays, setNewTokenDays] = useState(7);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
@@ -68,12 +86,14 @@ const PaidLivePanel = () => {
   };
 
   const load = async () => {
-    const [{ data: settings }, { data: access }] = await Promise.all([
+    const [{ data: settings }, { data: access }, { data: toks }] = await Promise.all([
       supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
       supabase.from("paid_livestream_access").select("*").order("expires_at", { ascending: false }),
+      supabase.from("paid_livestream_tokens").select("*").order("created_at", { ascending: false }),
     ]);
     if (settings) setS(settings as any);
     if (access) setList(access as any);
+    if (toks) setTokens(toks as any);
   };
 
   useEffect(() => {
@@ -81,9 +101,63 @@ const PaidLivePanel = () => {
     const ch = supabase.channel("owner-paidlive-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_access" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_tokens" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
+
+  const createToken = async () => {
+    const days = Math.max(1, newTokenDays);
+    const expires = new Date(Date.now() + days * 86400000).toISOString();
+    let token = randToken();
+    // retry on collision (very rare)
+    for (let i = 0; i < 5; i++) {
+      const { data: exist } = await supabase.from("paid_livestream_tokens").select("id").eq("token", token).maybeSingle();
+      if (!exist) break;
+      token = randToken();
+    }
+    const tempId = `tmp-${Date.now()}`;
+    setTokens(prev => [{ id: tempId, token, label: newTokenLabel || null, expires_at: expires, banned: false }, ...prev]);
+    setNewTokenLabel("");
+    const { error } = await supabase.from("paid_livestream_tokens").insert({
+      token, label: newTokenLabel || null, expires_at: expires,
+    });
+    if (error) {
+      setTokens(prev => prev.filter(t => t.id !== tempId));
+      toast.error(error.message);
+    } else {
+      const url = `${window.location.origin}/live-paid?t=${token}`;
+      navigator.clipboard?.writeText(url).catch(() => {});
+      toast.success(`Token ${token} dibuat & link disalin`);
+    }
+  };
+
+  const copyTokenLink = (token: string) => {
+    const url = `${window.location.origin}/live-paid?t=${token}`;
+    navigator.clipboard?.writeText(url);
+    toast.success("Link disalin");
+  };
+
+  const toggleBan = async (t: TokenRow) => {
+    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, banned: !t.banned } : x));
+    const { error } = await supabase.from("paid_livestream_tokens").update({ banned: !t.banned }).eq("id", t.id);
+    if (error) { toast.error(error.message); load(); }
+    else toast.success(!t.banned ? "Token diblokir" : "Token diaktifkan");
+  };
+
+  const removeToken = async (id: string) => {
+    setTokens(prev => prev.filter(t => t.id !== id));
+    await supabase.from("paid_livestream_tokens").delete().eq("id", id);
+    toast.success("Token dihapus");
+  };
+
+  const extendToken = async (t: TokenRow, days: number) => {
+    const base = Math.max(Date.now(), new Date(t.expires_at).getTime());
+    const next = new Date(base + days * 86400000).toISOString();
+    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, expires_at: next } : x));
+    await supabase.from("paid_livestream_tokens").update({ expires_at: next }).eq("id", t.id);
+    toast.success(`+${days} hari`);
+  };
 
   const saveSettings = async () => {
     if (!s) return;
@@ -174,10 +248,10 @@ const PaidLivePanel = () => {
         </div>
 
         <div>
-          <label className="text-xs font-medium">URL M3U8 Asli (server IDN)</label>
+          <label className="text-xs font-medium">URL M3U8 (server IDN)</label>
           <Input value={s.m3u8_url} onChange={e => setS({ ...s, m3u8_url: e.target.value })}
             placeholder="https://...m3u8" />
-          <p className="text-[10px] text-muted-foreground mt-1">URL ini disembunyikan, penonton hanya melihat URL proxy.</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Dimainkan langsung tanpa proxy untuk performa optimal (tanpa buffering ulang).</p>
         </div>
 
         <div>
@@ -245,7 +319,55 @@ const PaidLivePanel = () => {
         </Button>
       </Card>
 
-      {/* Access */}
+      {/* Token Access (link-based) */}
+      <Card className="p-4 space-y-3">
+        <h3 className="font-bold">🎟️ Token Akses Link ({tokens.length})</h3>
+        <p className="text-[10px] text-muted-foreground">1 link = 1 orang. Watermark di player akan menampilkan kode token.</p>
+
+        <div className="flex gap-2">
+          <Input placeholder="Label (opsional, mis: Andi)" value={newTokenLabel}
+            onChange={e => setNewTokenLabel(e.target.value)} className="flex-1" />
+          <Input type="number" min={1} value={newTokenDays}
+            onChange={e => setNewTokenDays(parseInt(e.target.value || "1"))} className="w-20" />
+          <Button onClick={createToken} size="sm"><Plus className="h-4 w-4" /></Button>
+        </div>
+
+        <div className="space-y-1.5 max-h-80 overflow-y-auto">
+          {tokens.map(t => {
+            const expired = new Date(t.expires_at).getTime() < Date.now();
+            return (
+              <div key={t.id} className={`flex items-center gap-1.5 p-2 rounded border ${
+                t.banned ? "bg-destructive/10 border-destructive/30" : expired ? "opacity-50 bg-muted/30" : "bg-card"
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm tracking-wider">{t.token}</span>
+                    {t.label && <span className="text-[10px] text-muted-foreground truncate">{t.label}</span>}
+                    {t.banned && <span className="text-[9px] font-bold text-destructive">BANNED</span>}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {expired ? "❌ Kedaluwarsa" : "✅ Sampai"} {new Date(t.expires_at).toLocaleString("id-ID")}
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => copyTokenLink(t.token)} title="Salin link">
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => extendToken(t, 7)}>+7h</Button>
+                <Button size="sm" variant={t.banned ? "outline" : "ghost"} className="h-7 w-7 p-0"
+                  onClick={() => toggleBan(t)} title={t.banned ? "Aktifkan" : "Blokir"}>
+                  {t.banned ? <CheckCircle2 className="h-3 w-3 text-chart-4" /> : <Ban className="h-3 w-3 text-destructive" />}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeToken(t.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          })}
+          {tokens.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">Belum ada token</div>}
+        </div>
+      </Card>
+
+      {/* Email Access */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">📧 Akses Email ({list.length})</h3>
 

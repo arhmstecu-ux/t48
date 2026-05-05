@@ -45,8 +45,11 @@ const randToken = () => {
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Access[]>([]);
+  const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
+  const [newTokenLabel, setNewTokenLabel] = useState("");
+  const [newTokenDays, setNewTokenDays] = useState(7);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);

@@ -248,10 +248,10 @@ const PaidLivePanel = () => {
         </div>
 
         <div>
-          <label className="text-xs font-medium">URL M3U8 Asli (server IDN)</label>
+          <label className="text-xs font-medium">URL M3U8 (server IDN)</label>
           <Input value={s.m3u8_url} onChange={e => setS({ ...s, m3u8_url: e.target.value })}
             placeholder="https://...m3u8" />
-          <p className="text-[10px] text-muted-foreground mt-1">URL ini disembunyikan, penonton hanya melihat URL proxy.</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Dimainkan langsung tanpa proxy untuk performa optimal (tanpa buffering ulang).</p>
         </div>
 
         <div>

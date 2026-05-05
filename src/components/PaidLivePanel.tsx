@@ -319,7 +319,55 @@ const PaidLivePanel = () => {
         </Button>
       </Card>
 
-      {/* Access */}
+      {/* Token Access (link-based) */}
+      <Card className="p-4 space-y-3">
+        <h3 className="font-bold">🎟️ Token Akses Link ({tokens.length})</h3>
+        <p className="text-[10px] text-muted-foreground">1 link = 1 orang. Watermark di player akan menampilkan kode token.</p>
+
+        <div className="flex gap-2">
+          <Input placeholder="Label (opsional, mis: Andi)" value={newTokenLabel}
+            onChange={e => setNewTokenLabel(e.target.value)} className="flex-1" />
+          <Input type="number" min={1} value={newTokenDays}
+            onChange={e => setNewTokenDays(parseInt(e.target.value || "1"))} className="w-20" />
+          <Button onClick={createToken} size="sm"><Plus className="h-4 w-4" /></Button>
+        </div>
+
+        <div className="space-y-1.5 max-h-80 overflow-y-auto">
+          {tokens.map(t => {
+            const expired = new Date(t.expires_at).getTime() < Date.now();
+            return (
+              <div key={t.id} className={`flex items-center gap-1.5 p-2 rounded border ${
+                t.banned ? "bg-destructive/10 border-destructive/30" : expired ? "opacity-50 bg-muted/30" : "bg-card"
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm tracking-wider">{t.token}</span>
+                    {t.label && <span className="text-[10px] text-muted-foreground truncate">{t.label}</span>}
+                    {t.banned && <span className="text-[9px] font-bold text-destructive">BANNED</span>}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {expired ? "❌ Kedaluwarsa" : "✅ Sampai"} {new Date(t.expires_at).toLocaleString("id-ID")}
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => copyTokenLink(t.token)} title="Salin link">
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => extendToken(t, 7)}>+7h</Button>
+                <Button size="sm" variant={t.banned ? "outline" : "ghost"} className="h-7 w-7 p-0"
+                  onClick={() => toggleBan(t)} title={t.banned ? "Aktifkan" : "Blokir"}>
+                  {t.banned ? <CheckCircle2 className="h-3 w-3 text-chart-4" /> : <Ban className="h-3 w-3 text-destructive" />}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeToken(t.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          })}
+          {tokens.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">Belum ada token</div>}
+        </div>
+      </Card>
+
+      {/* Email Access */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">📧 Akses Email ({list.length})</h3>
 

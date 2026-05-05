@@ -86,12 +86,14 @@ const PaidLivePanel = () => {
   };
 
   const load = async () => {
-    const [{ data: settings }, { data: access }] = await Promise.all([
+    const [{ data: settings }, { data: access }, { data: toks }] = await Promise.all([
       supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
       supabase.from("paid_livestream_access").select("*").order("expires_at", { ascending: false }),
+      supabase.from("paid_livestream_tokens").select("*").order("created_at", { ascending: false }),
     ]);
     if (settings) setS(settings as any);
     if (access) setList(access as any);
+    if (toks) setTokens(toks as any);
   };
 
   useEffect(() => {
@@ -99,9 +101,63 @@ const PaidLivePanel = () => {
     const ch = supabase.channel("owner-paidlive-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_access" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_tokens" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
+
+  const createToken = async () => {
+    const days = Math.max(1, newTokenDays);
+    const expires = new Date(Date.now() + days * 86400000).toISOString();
+    let token = randToken();
+    // retry on collision (very rare)
+    for (let i = 0; i < 5; i++) {
+      const { data: exist } = await supabase.from("paid_livestream_tokens").select("id").eq("token", token).maybeSingle();
+      if (!exist) break;
+      token = randToken();
+    }
+    const tempId = `tmp-${Date.now()}`;
+    setTokens(prev => [{ id: tempId, token, label: newTokenLabel || null, expires_at: expires, banned: false }, ...prev]);
+    setNewTokenLabel("");
+    const { error } = await supabase.from("paid_livestream_tokens").insert({
+      token, label: newTokenLabel || null, expires_at: expires,
+    });
+    if (error) {
+      setTokens(prev => prev.filter(t => t.id !== tempId));
+      toast.error(error.message);
+    } else {
+      const url = `${window.location.origin}/live-paid?t=${token}`;
+      navigator.clipboard?.writeText(url).catch(() => {});
+      toast.success(`Token ${token} dibuat & link disalin`);
+    }
+  };
+
+  const copyTokenLink = (token: string) => {
+    const url = `${window.location.origin}/live-paid?t=${token}`;
+    navigator.clipboard?.writeText(url);
+    toast.success("Link disalin");
+  };
+
+  const toggleBan = async (t: TokenRow) => {
+    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, banned: !t.banned } : x));
+    const { error } = await supabase.from("paid_livestream_tokens").update({ banned: !t.banned }).eq("id", t.id);
+    if (error) { toast.error(error.message); load(); }
+    else toast.success(!t.banned ? "Token diblokir" : "Token diaktifkan");
+  };
+
+  const removeToken = async (id: string) => {
+    setTokens(prev => prev.filter(t => t.id !== id));
+    await supabase.from("paid_livestream_tokens").delete().eq("id", id);
+    toast.success("Token dihapus");
+  };
+
+  const extendToken = async (t: TokenRow, days: number) => {
+    const base = Math.max(Date.now(), new Date(t.expires_at).getTime());
+    const next = new Date(base + days * 86400000).toISOString();
+    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, expires_at: next } : x));
+    await supabase.from("paid_livestream_tokens").update({ expires_at: next }).eq("id", t.id);
+    toast.success(`+${days} hari`);
+  };
 
   const saveSettings = async () => {
     if (!s) return;

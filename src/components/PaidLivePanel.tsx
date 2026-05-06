@@ -320,6 +320,8 @@ const PaidLivePanel = () => {
         </Button>
       </Card>
 
+      <PaidLineupManager />
+
       {/* Token Access (link-based) */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">🎟️ Token Akses Link ({tokens.length})</h3>

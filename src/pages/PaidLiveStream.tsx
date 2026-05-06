@@ -170,6 +170,20 @@ const PaidLiveStream = () => {
     return () => { supabase.removeChannel(ch); };
   }, [hasAccess, user?.id]);
 
+  // Lineup realtime
+  useEffect(() => {
+    if (!hasAccess) return;
+    const fetchLineup = async () => {
+      const { data } = await supabase.from("paid_livestream_lineup").select("id,nickname,generation,photo_url,position").order("position", { ascending: true });
+      if (data) setLineup(data as any);
+    };
+    fetchLineup();
+    const ch = supabase.channel("paid-lineup-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_lineup" }, fetchLineup)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [hasAccess]);
+
   // Presence
   useEffect(() => {
     if (!hasAccess) return;

@@ -76,6 +76,7 @@ const PaidLiveStream = () => {
   const [accessError, setAccessError] = useState<string>("");
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([]);
+  const [lineup, setLineup] = useState<{ id: string; nickname: string; generation: number; photo_url: string | null }[]>([]);
 
   const playerRef = useRef<HTMLDivElement>(null);
   const artRef = useRef<Artplayer | null>(null);
@@ -168,6 +169,20 @@ const PaidLiveStream = () => {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [hasAccess, user?.id]);
+
+  // Lineup realtime
+  useEffect(() => {
+    if (!hasAccess) return;
+    const fetchLineup = async () => {
+      const { data } = await supabase.from("paid_livestream_lineup").select("id,nickname,generation,photo_url,position").order("position", { ascending: true });
+      if (data) setLineup(data as any);
+    };
+    fetchLineup();
+    const ch = supabase.channel("paid-lineup-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_lineup" }, fetchLineup)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [hasAccess]);
 
   // Presence
   useEffect(() => {
@@ -514,7 +529,34 @@ const PaidLiveStream = () => {
           </div>
         </div>
 
-        {/* Chat — only logged-in users */}
+        {/* Line Up */}
+        {lineup.length > 0 && (
+          <div className="glass-card rounded-2xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <span>🎤</span>
+              <h3 className="text-sm font-bold">Line Up</h3>
+              <span className="text-xs text-muted-foreground">{lineup.length} member</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+              {lineup.map(m => (
+                <div key={m.id} className="flex-shrink-0 w-16 text-center">
+                  {m.photo_url ? (
+                    <img src={m.photo_url} alt={m.nickname} loading="lazy"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-lg font-bold">
+                      {m.nickname[0]}
+                    </div>
+                  )}
+                  <div className="text-[11px] font-bold mt-1 truncate">{m.nickname}</div>
+                  <div className="text-[9px] text-muted-foreground">Gen {m.generation}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+
         {user ? (
           <div className="glass-card rounded-2xl flex flex-col h-[60vh]">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">

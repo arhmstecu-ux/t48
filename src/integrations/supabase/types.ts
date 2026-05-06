@@ -407,6 +407,36 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_livestream_lineup: {
+        Row: {
+          created_at: string
+          generation: number
+          id: string
+          member_id: number
+          nickname: string
+          photo_url: string | null
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          generation: number
+          id?: string
+          member_id: number
+          nickname: string
+          photo_url?: string | null
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          generation?: number
+          id?: string
+          member_id?: number
+          nickname?: string
+          photo_url?: string | null
+          position?: number
+        }
+        Relationships: []
+      }
       paid_livestream_settings: {
         Row: {
           active_server: string

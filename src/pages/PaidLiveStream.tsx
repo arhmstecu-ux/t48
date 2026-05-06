@@ -76,6 +76,7 @@ const PaidLiveStream = () => {
   const [accessError, setAccessError] = useState<string>("");
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([]);
+  const [lineup, setLineup] = useState<{ id: string; nickname: string; generation: number; photo_url: string | null }[]>([]);
 
   const playerRef = useRef<HTMLDivElement>(null);
   const artRef = useRef<Artplayer | null>(null);

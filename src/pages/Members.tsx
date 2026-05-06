@@ -145,8 +145,12 @@ const Members = () => {
               className="glass-card rounded-2xl p-4 text-center cursor-pointer hover:scale-[1.03] transition-transform group"
               onClick={() => setSelected(member)}
             >
-              <div className="w-14 h-14 mx-auto rounded-full overflow-hidden mb-2 gradient-primary flex items-center justify-center group-hover:shadow-lg transition-shadow">
-                <span className="text-lg font-bold text-primary-foreground">{member.nickname[0]}</span>
+              <div className={`w-16 h-16 mx-auto rounded-full overflow-hidden mb-2 gradient-primary flex items-center justify-center group-hover:shadow-lg transition-shadow ${member.status === 'suspended' ? 'ring-2 ring-destructive/40' : ''}`}>
+                {member.photo ? (
+                  <img src={member.photo} alt={member.nickname} loading="lazy" className={`w-full h-full object-cover ${member.status === 'suspended' ? 'grayscale opacity-70' : ''}`} />
+                ) : (
+                  <span className="text-lg font-bold text-primary-foreground">{member.nickname[0]}</span>
+                )}
               </div>
               <span className="text-[10px] font-mono bg-accent/10 text-accent px-1.5 py-0.5 rounded mb-1 inline-block">#{String(member.id).padStart(2, '0')}</span>
               <h3 className="font-bold text-foreground text-sm">{member.nickname}</h3>

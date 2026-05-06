@@ -108,8 +108,12 @@ const Members = () => {
         {selected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="glass-card rounded-2xl p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-              <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4 gradient-primary flex items-center justify-center">
-                <span className="text-3xl font-extrabold text-primary-foreground">{selected.nickname[0]}</span>
+              <div className={`w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 gradient-primary flex items-center justify-center ${selected.status === 'suspended' ? 'ring-2 ring-destructive/40' : ''}`}>
+                {selected.photo ? (
+                  <img src={selected.photo} alt={selected.nickname} loading="lazy" className={`w-full h-full object-cover ${selected.status === 'suspended' ? 'grayscale opacity-70' : ''}`} />
+                ) : (
+                  <span className="text-3xl font-extrabold text-primary-foreground">{selected.nickname[0]}</span>
+                )}
               </div>
               <div className="text-center mb-1">
                 <span className="text-xs font-mono bg-accent/10 text-accent px-2 py-0.5 rounded">#{String(selected.id).padStart(2, '0')}</span>
@@ -141,8 +145,12 @@ const Members = () => {
               className="glass-card rounded-2xl p-4 text-center cursor-pointer hover:scale-[1.03] transition-transform group"
               onClick={() => setSelected(member)}
             >
-              <div className="w-14 h-14 mx-auto rounded-full overflow-hidden mb-2 gradient-primary flex items-center justify-center group-hover:shadow-lg transition-shadow">
-                <span className="text-lg font-bold text-primary-foreground">{member.nickname[0]}</span>
+              <div className={`w-16 h-16 mx-auto rounded-full overflow-hidden mb-2 gradient-primary flex items-center justify-center group-hover:shadow-lg transition-shadow ${member.status === 'suspended' ? 'ring-2 ring-destructive/40' : ''}`}>
+                {member.photo ? (
+                  <img src={member.photo} alt={member.nickname} loading="lazy" className={`w-full h-full object-cover ${member.status === 'suspended' ? 'grayscale opacity-70' : ''}`} />
+                ) : (
+                  <span className="text-lg font-bold text-primary-foreground">{member.nickname[0]}</span>
+                )}
               </div>
               <span className="text-[10px] font-mono bg-accent/10 text-accent px-1.5 py-0.5 rounded mb-1 inline-block">#{String(member.id).padStart(2, '0')}</span>
               <h3 className="font-bold text-foreground text-sm">{member.nickname}</h3>

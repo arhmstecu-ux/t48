@@ -25,6 +25,27 @@ function b64urlDecode(s: string) {
   return atob(s);
 }
 
+// SSRF guard — only allow https:// public hosts, block private/metadata IPs
+function isSafeUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host.endsWith(".local") ||
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^169\.254\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) ||
+      host === "169.254.169.254" ||
+      host === "metadata.google.internal"
+    ) return false;
+    return true;
+  } catch { return false; }
+}
+
 async function checkAccess(req: Request): Promise<{ ok: boolean; reason?: string }> {
   const auth = req.headers.get("Authorization");
   if (!auth) return { ok: false, reason: "no auth" };

@@ -659,6 +659,30 @@ export type Database = {
         }
         Relationships: []
       }
+      replay_access: {
+        Row: {
+          created_at: string
+          id: string
+          unlocked_via: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          unlocked_via?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          unlocked_via?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       replay_purchases: {
         Row: {
           coin_amount: number
@@ -969,6 +993,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_contact: {
+        Args: never
+        Returns: {
+          email: string
+          phone: string
+        }[]
+      }
+      get_paid_m3u8_url: { Args: { _token?: string }; Returns: string }
       get_ranking_data: {
         Args: never
         Returns: {
@@ -985,6 +1017,19 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      validate_paid_token: {
+        Args: { _token: string }
+        Returns: {
+          banned: boolean
+          expires_at: string
+          token: string
+          valid: boolean
+        }[]
+      }
+      verify_replay_password: {
+        Args: { _password: string; _video_id: string }
         Returns: boolean
       }
     }

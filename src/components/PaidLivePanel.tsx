@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Plus, Upload, X, Copy, Ban, CheckCircle2 } from "lucide-react";
 import { useRef } from "react";
+import PaidLineupManager from "./PaidLineupManager";
 
 interface Settings {
   id?: string;

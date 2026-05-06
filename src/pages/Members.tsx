@@ -108,8 +108,12 @@ const Members = () => {
         {selected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="glass-card rounded-2xl p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-              <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4 gradient-primary flex items-center justify-center">
-                <span className="text-3xl font-extrabold text-primary-foreground">{selected.nickname[0]}</span>
+              <div className={`w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 gradient-primary flex items-center justify-center ${selected.status === 'suspended' ? 'ring-2 ring-destructive/40' : ''}`}>
+                {selected.photo ? (
+                  <img src={selected.photo} alt={selected.nickname} loading="lazy" className={`w-full h-full object-cover ${selected.status === 'suspended' ? 'grayscale opacity-70' : ''}`} />
+                ) : (
+                  <span className="text-3xl font-extrabold text-primary-foreground">{selected.nickname[0]}</span>
+                )}
               </div>
               <div className="text-center mb-1">
                 <span className="text-xs font-mono bg-accent/10 text-accent px-2 py-0.5 rounded">#{String(selected.id).padStart(2, '0')}</span>

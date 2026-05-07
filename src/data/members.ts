@@ -35,7 +35,7 @@ export const jkt48Members: JKT48Member[] = [
   { id: 14, name: 'Marsha Lenathea Lapian', nickname: 'Marsha', birthdate: '2006-01-09', generation: 9, status: 'active', fanbase: 'MarshaOshi', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/marsha_lenathea_iqu1d1.jpg' },
 
   // Gen 10
-  { id: 15, name: 'Amanda Puspita Sukma', nickname: 'Amanda', birthdate: '2004-12-17', generation: 10, status: 'active', fanbase: 'Mandaffection' },
+  
   { id: 16, name: 'Aurellia', nickname: 'Lia', birthdate: '2002-10-29', generation: 10, status: 'active', fanbase: 'Liamelior', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/lia_dotnos.jpg' },
   { id: 17, name: 'Gabriela Abigail Mewengkang', nickname: 'Ella', birthdate: '2006-08-07', generation: 10, status: 'active', fanbase: 'Ellatheria', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/gabriela_abigail_ui1hmv.jpg' },
   { id: 18, name: 'Jesslyn Septiani Elly', nickname: 'Lyn', birthdate: '2001-09-13', generation: 10, status: 'active', fanbase: 'Lynear', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/jesslyn_elly_qoehzs.jpg' },

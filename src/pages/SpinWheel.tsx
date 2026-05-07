@@ -147,40 +147,32 @@ const SpinWheel = () => {
     setShowResult(false);
     setWonPrize(null);
 
-    const selectedPrize = selectPrize();
-    const prizeIndex = prizes.findIndex(p => p.id === selectedPrize.id);
-    const segAngle = 360 / prizes.length;
-    // Target angle: the center of the prize segment, accounting for pointer at top
-    const targetAngle = 360 - (prizeIndex * segAngle + segAngle / 2);
-    const fullSpins = 5 + Math.floor(Math.random() * 3); // 5-7 full rotations
-    const finalRotation = rotation + fullSpins * 360 + targetAngle - (rotation % 360);
+    // Server-side: validates spin availability, picks prize, records result atomically
+    const { data, error } = await supabase.rpc('spin_wheel' as any);
+    if (error || !data || (Array.isArray(data) && data.length === 0)) {
+      setSpinning(false);
+      toast.error(error?.message || 'Gagal spin');
+      return;
+    }
+    const result = (Array.isArray(data) ? data[0] : data) as { prize_id: string; prize_name: string; prize_description: string };
+    const selectedPrize: Prize = prizes.find(p => p.id === result.prize_id) || {
+      id: result.prize_id, name: result.prize_name, description: result.prize_description, chance_percent: 0, sort_order: 0,
+    };
 
+    const prizeIndex = Math.max(0, prizes.findIndex(p => p.id === selectedPrize.id));
+    const segAngle = 360 / prizes.length;
+    const targetAngle = 360 - (prizeIndex * segAngle + segAngle / 2);
+    const fullSpins = 5 + Math.floor(Math.random() * 3);
+    const finalRotation = rotation + fullSpins * 360 + targetAngle - (rotation % 360);
     setRotation(finalRotation);
 
-    // Wait for spin animation to finish
-    setTimeout(async () => {
+    setTimeout(() => {
       setWonPrize(selectedPrize);
       setShowResult(true);
       setSpinning(false);
-
-      // Record result
-      await supabase.from('spin_results' as any).insert({
-        user_id: user.id,
-        prize_id: selectedPrize.id,
-        prize_name: selectedPrize.name,
-      });
-
-      // Decrement spins - find first record with available spins
-      const recordWithSpins = spinRecords.find(s => s.spins_total - s.spins_used > 0);
-      if (recordWithSpins) {
-        await supabase.from('user_spins' as any)
-          .update({ spins_used: recordWithSpins.spins_used + 1 })
-          .eq('id', recordWithSpins.id);
-      }
-
-      setSpinsAvailable(prev => prev - 1);
-      loadData(); // Refresh data
-    }, 4500); // Match CSS transition duration
+      setSpinsAvailable(prev => Math.max(0, prev - 1));
+      loadData();
+    }, 4500);
   };
 
   if (loading) {

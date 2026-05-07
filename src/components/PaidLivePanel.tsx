@@ -93,15 +93,70 @@ const PaidLivePanel = () => {
   };
 
   const load = async () => {
-    const [{ data: settings }, { data: access }, { data: toks }] = await Promise.all([
+    const [{ data: settings }, { data: access }, { data: toks }, { data: appS }] = await Promise.all([
       supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
       supabase.from("paid_livestream_access").select("*").order("expires_at", { ascending: false }),
       supabase.from("paid_livestream_tokens").select("*").order("created_at", { ascending: false }),
+      supabase.from("app_settings").select("key,value").in("key", TEMPLATE_KEYS as any),
     ]);
     if (settings) setS(settings as any);
     if (access) setList(access as any);
     if (toks) setTokens(toks as any);
+    if (appS) {
+      setTpl(prev => {
+        const next = { ...prev };
+        appS.forEach((r: any) => { if (TEMPLATE_KEYS.includes(r.key)) next[r.key as TemplateKey] = r.value || ""; });
+        return next;
+      });
+    }
   };
+
+  const saveTemplate = async () => {
+    const rows = TEMPLATE_KEYS.map(k => ({ key: k, value: tpl[k] || "", updated_at: new Date().toISOString() }));
+    const { error } = await supabase.from("app_settings").upsert(rows, { onConflict: "key" });
+    if (error) toast.error(error.message); else toast.success("Template tersimpan");
+  };
+
+  const buildMessage = (token: string) => {
+    const link = `${window.location.origin}/live-paid?t=${token}`;
+    return `*🚨Terimakasih telah membeli livestreaming dari kita.*
+
+> selamat menonton show ${tpl.paid_show_name || "(belum diatur)"}
+
+> ⏳akses jam: ${tpl.paid_access_time || "(belum diatur)"}
+
+📢 *AKSES LIVE STREAMING pada LINK UTAMA,LINK CADANGAN Dan REPLAY* :
+
+* 1️⃣ *Link Utama*: 🔗 ${link}
+
+                
+
+* 2⃣ *Link Cadangan* : 🔗 https://team-hub48.lovable.app/streams
+
+🔗Replay ${tpl.paid_replay_date || "(tanggal show)"} 2026 :
+
+1. t48.lovable.app/replay
+
+🗝️ Sandi : ${tpl.paid_replay_password || "(belum diatur)"}
+
+⚠️ *PENTING UNTUK DIPERHATIKAN*:
+
+1 Akun = 1 Device/browser : Jangan login di dua perangkat bersamaan.
+
+Waktu Akses: Disarankan masuk website saat live sudah dimulai (Cek info terbaru di saluran).
+
+Browser: Gunakan Chrome atau Opera untuk pengalaman terbaik.
+
+Kendala Akses: Jika tombol masuk tidak berfungsi, mohon matikan AdBlock/DNS AdGuard.
+
+Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
+  };
+
+  const copyTokenMessage = (token: string) => {
+    navigator.clipboard?.writeText(buildMessage(token));
+    toast.success("Pesan + link disalin");
+  };
+
 
   useEffect(() => {
     load();

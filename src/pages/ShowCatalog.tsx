@@ -171,8 +171,10 @@ const ShowCatalog = () => {
     try {
       if (buyMethod === 'coin') {
         const coinPrice = selectedProduct.coin_price || 0;
-        await supabase.from('coin_balances').update({ balance: coinBalance - coinPrice }).eq('user_id', user.id);
-        await supabase.from('coin_transactions').insert({ user_id: user.id, amount: -coinPrice, type: 'purchase', description: `Beli: ${selectedProduct.name}` });
+        const { error: spendErr } = await supabase.rpc('spend_coins' as any, {
+          _amount: coinPrice, _type: 'purchase', _description: `Beli: ${selectedProduct.name}`,
+        });
+        if (spendErr) { toast.error(spendErr.message?.includes('Insufficient') ? 'Koin tidak cukup!' : 'Gagal'); setProcessing(false); return; }
         const { data: purchase } = await supabase.from('purchases').insert({
           user_id: user.id, total: 0, status: 'completed', payment_method: 'coin',
         }).select().single();

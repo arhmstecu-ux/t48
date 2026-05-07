@@ -1000,7 +1000,40 @@ export type Database = {
           phone: string
         }[]
       }
+      get_paid_livestream_public: {
+        Args: never
+        Returns: {
+          active_server: string
+          background_url: string
+          description: string
+          id: string
+          is_live: boolean
+          logo_url: string
+          start_time: string
+          title: string
+          updated_at: string
+          youtube_url: string
+        }[]
+      }
       get_paid_m3u8_url: { Args: { _token?: string }; Returns: string }
+      get_public_profiles_by_codes: {
+        Args: { _codes: string[] }
+        Returns: {
+          profile_code: string
+          profile_photo: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_public_profiles_by_ids: {
+        Args: { _ids: string[] }
+        Returns: {
+          profile_code: string
+          profile_photo: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_ranking_data: {
         Args: never
         Returns: {
@@ -1018,6 +1051,38 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_public_profiles: {
+        Args: never
+        Returns: {
+          profile_code: string
+          profile_photo: string
+          user_id: string
+          username: string
+        }[]
+      }
+      list_replay_videos: {
+        Args: never
+        Returns: {
+          created_at: string
+          has_password: boolean
+          id: string
+          title: string
+          youtube_url: string
+        }[]
+      }
+      purchase_replay: { Args: { _video_id: string }; Returns: boolean }
+      spend_coins: {
+        Args: { _amount: number; _description: string; _type: string }
+        Returns: number
+      }
+      spin_wheel: {
+        Args: never
+        Returns: {
+          prize_description: string
+          prize_id: string
+          prize_name: string
+        }[]
       }
       validate_paid_token: {
         Args: { _token: string }

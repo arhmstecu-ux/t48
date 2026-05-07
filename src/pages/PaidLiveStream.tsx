@@ -12,7 +12,7 @@ import Hls from "hls.js";
 interface Settings {
   active_server: "youtube" | "idn";
   youtube_url: string;
-  m3u8_url: string;
+  m3u8_url?: string;
   title: string;
   description: string;
   logo_url: string;
@@ -97,7 +97,7 @@ const PaidLiveStream = () => {
     let mounted = true;
     const load = async () => {
       const promises: any[] = [
-        supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
+        supabase.rpc('get_paid_livestream_public' as any),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
         supabase.from("livestream_moderators").select("profile_code"),
       ];
@@ -107,11 +107,13 @@ const PaidLiveStream = () => {
         promises.push(Promise.resolve({ data: null }));
       }
       if (tokenParam) {
-        promises.push(supabase.from("paid_livestream_tokens").select("token,expires_at,banned").eq("token", tokenParam).maybeSingle());
+        promises.push(supabase.rpc('validate_paid_token' as any, { _token: tokenParam }));
       } else {
         promises.push(Promise.resolve({ data: null }));
       }
-      const [{ data: s }, { data: roles }, { data: mods }, { data: a }, { data: tok }] = await Promise.all(promises);
+      const [{ data: sRaw }, { data: roles }, { data: mods }, { data: a }, { data: tokRaw }] = await Promise.all(promises);
+      const s = Array.isArray(sRaw) ? sRaw[0] : sRaw;
+      const tok = Array.isArray(tokRaw) ? tokRaw[0] : tokRaw;
       if (!mounted) return;
       if (s) { setSettings(s as any); setServerChoice((s as any).active_server || "youtube"); }
       if (roles) setOwnerIds(new Set(roles.map((r: any) => r.user_id)));
@@ -124,11 +126,13 @@ const PaidLiveStream = () => {
       // Resolve access: owner > token > email
       if (isOwner) {
         setHasAccess(true); setAccessMode("owner");
-      } else if (tok) {
+      } else if (tok && (tok as any).valid) {
         const t: any = tok;
-        if (t.banned) { setAccessError("Token Anda telah diblokir oleh admin."); setHasAccess(false); }
-        else if (new Date(t.expires_at).getTime() <= Date.now()) { setAccessError("Token sudah kedaluwarsa."); setHasAccess(false); }
-        else { setHasAccess(true); setAccessMode("token"); setTokenCode(t.token); setAccessExpiry(t.expires_at); }
+        setHasAccess(true); setAccessMode("token"); setTokenCode(t.token); setAccessExpiry(t.expires_at);
+      } else if (tok && (tok as any).banned) {
+        setAccessError("Token Anda telah diblokir oleh admin."); setHasAccess(false);
+      } else if (tok && !((tok as any).valid)) {
+        setAccessError("Token sudah kedaluwarsa."); setHasAccess(false);
       } else if (a && new Date((a as any).expires_at).getTime() > Date.now()) {
         setHasAccess(true); setAccessMode("email"); setAccessExpiry((a as any).expires_at);
       } else if (tokenParam) {
@@ -206,9 +210,17 @@ const PaidLiveStream = () => {
 
   const isPreShow = countdown !== null && !settings?.is_live;
 
-  // ART Player for IDN — direct M3U8, optimized HLS, manual quality control
+  // ART Player for IDN — fetches m3u8 via secure RPC (not exposed in settings)
+  const [m3u8Url, setM3u8Url] = useState<string>("");
   useEffect(() => {
-    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !settings?.m3u8_url) {
+    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); return; }
+    supabase.rpc('get_paid_m3u8_url' as any, { _token: tokenCode || null }).then(({ data }) => {
+      if (typeof data === 'string') setM3u8Url(data);
+    });
+  }, [hasAccess, serverChoice, tokenCode]);
+
+  useEffect(() => {
+    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       setLevels([]);
@@ -219,7 +231,7 @@ const PaidLiveStream = () => {
 
     const art = new Artplayer({
       container: playerRef.current,
-      url: settings.m3u8_url,
+      url: m3u8Url,
       type: "m3u8",
       autoplay: true, muted: false, playsInline: true,
       setting: true, fullscreen: true, fullscreenWeb: true, pip: true,
@@ -286,7 +298,7 @@ const PaidLiveStream = () => {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [hasAccess, isPreShow, serverChoice, settings?.m3u8_url]);
+  }, [hasAccess, isPreShow, serverChoice, m3u8Url]);
 
   const setLevel = (lv: number) => {
     if (!hlsRef.current) return;
@@ -468,7 +480,7 @@ const PaidLiveStream = () => {
                   Server YouTube belum dikonfigurasi
                 </div>
               )
-            ) : settings?.m3u8_url ? (
+            ) : m3u8Url ? (
               <>
                 <div ref={playerRef} className="w-full h-full" />
                 <MovingWatermark code={watermarkCode} />

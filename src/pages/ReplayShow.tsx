@@ -2,13 +2,19 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Play, Lock, Eye, EyeOff, Coins } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const REPLAY_COIN_PRICE = 2;
+
+interface ReplayVideo {
+  id: string;
+  title: string;
+  youtube_url: string;
+  created_at: string;
+  has_password: boolean;
+}
 
 const getYoutubeEmbedUrl = (url: string): string => {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/);
@@ -17,9 +23,8 @@ const getYoutubeEmbedUrl = (url: string): string => {
 
 const ReplayShow = () => {
   const { user } = useAuth();
-  const { data: videos, loading } = useRealtimeTable<Tables<'replay_videos'>>('replay_videos', {
-    order: { column: 'created_at', ascending: false }
-  });
+  const [videos, setVideos] = useState<ReplayVideo[]>([]);
+  const [loading, setLoading] = useState(true);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
   const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
@@ -27,6 +32,15 @@ const ReplayShow = () => {
   const [coinBalance, setCoinBalance] = useState(0);
   const [purchasedVideos, setPurchasedVideos] = useState<Set<string>>(new Set());
   const [buyingVideo, setBuyingVideo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadVideos = async () => {
+      const { data } = await supabase.rpc('list_replay_videos' as any);
+      if (data) setVideos(data as ReplayVideo[]);
+      setLoading(false);
+    };
+    loadVideos();
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -40,12 +54,6 @@ const ReplayShow = () => {
     };
     loadBalance();
     loadPurchases();
-    
-    const ch = supabase.channel('replay-coin-bal')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'coin_balances' }, () => loadBalance())
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'replay_purchases' }, () => loadPurchases())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
   }, [user]);
 
   useEffect(() => {
@@ -54,9 +62,10 @@ const ReplayShow = () => {
     });
   }, [purchasedVideos]);
 
-  const handleUnlock = (video: Tables<'replay_videos'>) => {
+  const handleUnlock = async (video: ReplayVideo) => {
     const input = passwordInputs[video.id] || '';
-    if (input === video.password) {
+    const { data, error } = await supabase.rpc('verify_replay_password', { _video_id: video.id, _password: input });
+    if (!error && data === true) {
       setUnlocked(prev => ({ ...prev, [video.id]: true }));
       setErrors(prev => ({ ...prev, [video.id]: '' }));
     } else {
@@ -64,22 +73,17 @@ const ReplayShow = () => {
     }
   };
 
-  const handleBuyWithCoin = async (video: Tables<'replay_videos'>) => {
+  const handleBuyWithCoin = async (video: ReplayVideo) => {
     if (!user) { toast.error('Silakan login terlebih dahulu!'); return; }
-    if (coinBalance < REPLAY_COIN_PRICE) { toast.error(`Koin tidak cukup! Butuh ${REPLAY_COIN_PRICE} koin, saldo: ${coinBalance}`); return; }
-    
     setBuyingVideo(video.id);
-    try {
-      await supabase.from('coin_balances').update({ balance: coinBalance - REPLAY_COIN_PRICE }).eq('user_id', user.id);
-      await supabase.from('coin_transactions').insert({ user_id: user.id, amount: -REPLAY_COIN_PRICE, type: 'purchase', description: `Replay: ${video.title}` });
-      await supabase.from('replay_purchases').insert({ user_id: user.id, video_id: video.id, coin_amount: REPLAY_COIN_PRICE });
-      
-      setCoinBalance(prev => prev - REPLAY_COIN_PRICE);
+    const { error } = await supabase.rpc('purchase_replay' as any, { _video_id: video.id });
+    if (error) {
+      toast.error(error.message?.includes('Insufficient') ? `Koin tidak cukup! Butuh ${REPLAY_COIN_PRICE} koin` : 'Gagal membeli replay');
+    } else {
+      setCoinBalance(prev => Math.max(0, prev - REPLAY_COIN_PRICE));
       setPurchasedVideos(prev => new Set([...prev, video.id]));
       setUnlocked(prev => ({ ...prev, [video.id]: true }));
       toast.success(`Replay "${video.title}" berhasil dibuka! 🎉`);
-    } catch {
-      toast.error('Gagal membeli replay');
     }
     setBuyingVideo(null);
   };
@@ -154,31 +158,35 @@ const ReplayShow = () => {
                           </button>
                         )}
                         
-                        <div className="flex items-center gap-3 w-64">
-                          <div className="flex-1 h-px bg-border" />
-                          <span className="text-xs text-muted-foreground">atau</span>
-                          <div className="flex-1 h-px bg-border" />
-                        </div>
+                        {video.has_password && (
+                          <>
+                            <div className="flex items-center gap-3 w-64">
+                              <div className="flex-1 h-px bg-border" />
+                              <span className="text-xs text-muted-foreground">atau</span>
+                              <div className="flex-1 h-px bg-border" />
+                            </div>
 
-                        <div className="flex flex-col items-center gap-2 w-64">
-                          <div className="relative w-full">
-                            <input type={showPassword[video.id] ? 'text' : 'password'}
-                              value={passwordInputs[video.id] || ''}
-                              onChange={e => setPasswordInputs(prev => ({ ...prev, [video.id]: e.target.value }))}
-                              placeholder="Masukkan sandi..."
-                              className="w-full px-4 py-2 pr-10 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                              onKeyDown={e => e.key === 'Enter' && handleUnlock(video)} />
-                            <button onClick={() => setShowPassword(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
-                              {showPassword[video.id] ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                            </button>
-                          </div>
-                          {errors[video.id] && <p className="text-xs text-destructive">{errors[video.id]}</p>}
-                          <button onClick={() => handleUnlock(video)}
-                            className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
-                            Buka Video
-                          </button>
-                        </div>
+                            <div className="flex flex-col items-center gap-2 w-64">
+                              <div className="relative w-full">
+                                <input type={showPassword[video.id] ? 'text' : 'password'}
+                                  value={passwordInputs[video.id] || ''}
+                                  onChange={e => setPasswordInputs(prev => ({ ...prev, [video.id]: e.target.value }))}
+                                  placeholder="Masukkan sandi..."
+                                  className="w-full px-4 py-2 pr-10 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  onKeyDown={e => e.key === 'Enter' && handleUnlock(video)} />
+                                <button onClick={() => setShowPassword(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
+                                  {showPassword[video.id] ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                                </button>
+                              </div>
+                              {errors[video.id] && <p className="text-xs text-destructive">{errors[video.id]}</p>}
+                              <button onClick={() => handleUnlock(video)}
+                                className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
+                                Buka Video
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

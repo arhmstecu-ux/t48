@@ -43,10 +43,16 @@ const randToken = () => {
   return s;
 };
 
+const TEMPLATE_KEYS = ["paid_show_name", "paid_access_time", "paid_replay_date", "paid_replay_password"] as const;
+type TemplateKey = typeof TEMPLATE_KEYS[number];
+
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Access[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
+  const [tpl, setTpl] = useState<Record<TemplateKey, string>>({
+    paid_show_name: "", paid_access_time: "", paid_replay_date: "", paid_replay_password: "",
+  });
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
   const [newTokenLabel, setNewTokenLabel] = useState("");

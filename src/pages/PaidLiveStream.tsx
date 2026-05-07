@@ -210,9 +210,17 @@ const PaidLiveStream = () => {
 
   const isPreShow = countdown !== null && !settings?.is_live;
 
-  // ART Player for IDN — direct M3U8, optimized HLS, manual quality control
+  // ART Player for IDN — fetches m3u8 via secure RPC (not exposed in settings)
+  const [m3u8Url, setM3u8Url] = useState<string>("");
   useEffect(() => {
-    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !settings?.m3u8_url) {
+    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); return; }
+    supabase.rpc('get_paid_m3u8_url' as any, { _token: tokenCode || null }).then(({ data }) => {
+      if (typeof data === 'string') setM3u8Url(data);
+    });
+  }, [hasAccess, serverChoice, tokenCode]);
+
+  useEffect(() => {
+    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       setLevels([]);

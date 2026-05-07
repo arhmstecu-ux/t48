@@ -188,16 +188,15 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
       setTokens(prev => prev.filter(t => t.id !== tempId));
       toast.error(error.message);
     } else {
-      const url = `${window.location.origin}/live-paid?t=${token}`;
-      navigator.clipboard?.writeText(url).catch(() => {});
-      toast.success(`Token ${token} dibuat & link disalin`);
+      const msg = buildMessage(token);
+      navigator.clipboard?.writeText(msg).catch(() => {});
+      toast.success(`Token ${token} dibuat & pesan disalin`);
     }
   };
 
   const copyTokenLink = (token: string) => {
-    const url = `${window.location.origin}/live-paid?t=${token}`;
-    navigator.clipboard?.writeText(url);
-    toast.success("Link disalin");
+    navigator.clipboard?.writeText(buildMessage(token));
+    toast.success("Pesan + link disalin");
   };
 
   const toggleBan = async (t: TokenRow) => {

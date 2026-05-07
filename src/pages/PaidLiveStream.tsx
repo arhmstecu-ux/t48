@@ -126,11 +126,13 @@ const PaidLiveStream = () => {
       // Resolve access: owner > token > email
       if (isOwner) {
         setHasAccess(true); setAccessMode("owner");
-      } else if (tok) {
+      } else if (tok && (tok as any).valid) {
         const t: any = tok;
-        if (t.banned) { setAccessError("Token Anda telah diblokir oleh admin."); setHasAccess(false); }
-        else if (new Date(t.expires_at).getTime() <= Date.now()) { setAccessError("Token sudah kedaluwarsa."); setHasAccess(false); }
-        else { setHasAccess(true); setAccessMode("token"); setTokenCode(t.token); setAccessExpiry(t.expires_at); }
+        setHasAccess(true); setAccessMode("token"); setTokenCode(t.token); setAccessExpiry(t.expires_at);
+      } else if (tok && (tok as any).banned) {
+        setAccessError("Token Anda telah diblokir oleh admin."); setHasAccess(false);
+      } else if (tok && !((tok as any).valid)) {
+        setAccessError("Token sudah kedaluwarsa."); setHasAccess(false);
       } else if (a && new Date((a as any).expires_at).getTime() > Date.now()) {
         setHasAccess(true); setAccessMode("email"); setAccessExpiry((a as any).expires_at);
       } else if (tokenParam) {

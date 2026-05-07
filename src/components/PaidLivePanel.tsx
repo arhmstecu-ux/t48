@@ -43,10 +43,16 @@ const randToken = () => {
   return s;
 };
 
+const TEMPLATE_KEYS = ["paid_show_name", "paid_access_time", "paid_replay_date", "paid_replay_password"] as const;
+type TemplateKey = typeof TEMPLATE_KEYS[number];
+
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Access[]>([]);
   const [tokens, setTokens] = useState<TokenRow[]>([]);
+  const [tpl, setTpl] = useState<Record<TemplateKey, string>>({
+    paid_show_name: "", paid_access_time: "", paid_replay_date: "", paid_replay_password: "",
+  });
   const [newEmail, setNewEmail] = useState("");
   const [newDays, setNewDays] = useState(7);
   const [newTokenLabel, setNewTokenLabel] = useState("");
@@ -87,15 +93,70 @@ const PaidLivePanel = () => {
   };
 
   const load = async () => {
-    const [{ data: settings }, { data: access }, { data: toks }] = await Promise.all([
+    const [{ data: settings }, { data: access }, { data: toks }, { data: appS }] = await Promise.all([
       supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
       supabase.from("paid_livestream_access").select("*").order("expires_at", { ascending: false }),
       supabase.from("paid_livestream_tokens").select("*").order("created_at", { ascending: false }),
+      supabase.from("app_settings").select("key,value").in("key", TEMPLATE_KEYS as any),
     ]);
     if (settings) setS(settings as any);
     if (access) setList(access as any);
     if (toks) setTokens(toks as any);
+    if (appS) {
+      setTpl(prev => {
+        const next = { ...prev };
+        appS.forEach((r: any) => { if (TEMPLATE_KEYS.includes(r.key)) next[r.key as TemplateKey] = r.value || ""; });
+        return next;
+      });
+    }
   };
+
+  const saveTemplate = async () => {
+    const rows = TEMPLATE_KEYS.map(k => ({ key: k, value: tpl[k] || "", updated_at: new Date().toISOString() }));
+    const { error } = await supabase.from("app_settings").upsert(rows, { onConflict: "key" });
+    if (error) toast.error(error.message); else toast.success("Template tersimpan");
+  };
+
+  const buildMessage = (token: string) => {
+    const link = `${window.location.origin}/live-paid?t=${token}`;
+    return `*🚨Terimakasih telah membeli livestreaming dari kita.*
+
+> selamat menonton show ${tpl.paid_show_name || "(belum diatur)"}
+
+> ⏳akses jam: ${tpl.paid_access_time || "(belum diatur)"}
+
+📢 *AKSES LIVE STREAMING pada LINK UTAMA,LINK CADANGAN Dan REPLAY* :
+
+* 1️⃣ *Link Utama*: 🔗 ${link}
+
+                
+
+* 2⃣ *Link Cadangan* : 🔗 https://team-hub48.lovable.app/streams
+
+🔗Replay ${tpl.paid_replay_date || "(tanggal show)"} 2026 :
+
+1. t48.lovable.app/replay
+
+🗝️ Sandi : ${tpl.paid_replay_password || "(belum diatur)"}
+
+⚠️ *PENTING UNTUK DIPERHATIKAN*:
+
+1 Akun = 1 Device/browser : Jangan login di dua perangkat bersamaan.
+
+Waktu Akses: Disarankan masuk website saat live sudah dimulai (Cek info terbaru di saluran).
+
+Browser: Gunakan Chrome atau Opera untuk pengalaman terbaik.
+
+Kendala Akses: Jika tombol masuk tidak berfungsi, mohon matikan AdBlock/DNS AdGuard.
+
+Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
+  };
+
+  const copyTokenMessage = (token: string) => {
+    navigator.clipboard?.writeText(buildMessage(token));
+    toast.success("Pesan + link disalin");
+  };
+
 
   useEffect(() => {
     load();
@@ -127,16 +188,15 @@ const PaidLivePanel = () => {
       setTokens(prev => prev.filter(t => t.id !== tempId));
       toast.error(error.message);
     } else {
-      const url = `${window.location.origin}/live-paid?t=${token}`;
-      navigator.clipboard?.writeText(url).catch(() => {});
-      toast.success(`Token ${token} dibuat & link disalin`);
+      const msg = buildMessage(token);
+      navigator.clipboard?.writeText(msg).catch(() => {});
+      toast.success(`Token ${token} dibuat & pesan disalin`);
     }
   };
 
   const copyTokenLink = (token: string) => {
-    const url = `${window.location.origin}/live-paid?t=${token}`;
-    navigator.clipboard?.writeText(url);
-    toast.success("Link disalin");
+    navigator.clipboard?.writeText(buildMessage(token));
+    toast.success("Pesan + link disalin");
   };
 
   const toggleBan = async (t: TokenRow) => {
@@ -321,6 +381,30 @@ const PaidLivePanel = () => {
       </Card>
 
       <PaidLineupManager />
+
+      {/* Template pesan WA */}
+      <Card className="p-4 space-y-3">
+        <h3 className="font-bold">📝 Template Pesan Token</h3>
+        <p className="text-[10px] text-muted-foreground">Diisi untuk pesan otomatis saat menyalin link token.</p>
+        <div>
+          <label className="text-xs font-medium">Nama Show</label>
+          <Input value={tpl.paid_show_name} onChange={e => setTpl({ ...tpl, paid_show_name: e.target.value })} placeholder="mis: Aitakatta" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Jam Akses</label>
+          <Input value={tpl.paid_access_time} onChange={e => setTpl({ ...tpl, paid_access_time: e.target.value })} placeholder="mis: 19.00 WIB" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Tanggal Replay</label>
+          <Input value={tpl.paid_replay_date} onChange={e => setTpl({ ...tpl, paid_replay_date: e.target.value })} placeholder="mis: 7 Mei" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Sandi Replay</label>
+          <Input value={tpl.paid_replay_password} onChange={e => setTpl({ ...tpl, paid_replay_password: e.target.value })} placeholder="mis: jkt48" />
+        </div>
+        <Button onClick={saveTemplate} className="w-full" size="sm">💾 Simpan Template</Button>
+      </Card>
+
 
       {/* Token Access (link-based) */}
       <Card className="p-4 space-y-3">

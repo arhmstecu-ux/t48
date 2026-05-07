@@ -382,6 +382,30 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
 
       <PaidLineupManager />
 
+      {/* Template pesan WA */}
+      <Card className="p-4 space-y-3">
+        <h3 className="font-bold">📝 Template Pesan Token</h3>
+        <p className="text-[10px] text-muted-foreground">Diisi untuk pesan otomatis saat menyalin link token.</p>
+        <div>
+          <label className="text-xs font-medium">Nama Show</label>
+          <Input value={tpl.paid_show_name} onChange={e => setTpl({ ...tpl, paid_show_name: e.target.value })} placeholder="mis: Aitakatta" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Jam Akses</label>
+          <Input value={tpl.paid_access_time} onChange={e => setTpl({ ...tpl, paid_access_time: e.target.value })} placeholder="mis: 19.00 WIB" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Tanggal Replay</label>
+          <Input value={tpl.paid_replay_date} onChange={e => setTpl({ ...tpl, paid_replay_date: e.target.value })} placeholder="mis: 7 Mei" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Sandi Replay</label>
+          <Input value={tpl.paid_replay_password} onChange={e => setTpl({ ...tpl, paid_replay_password: e.target.value })} placeholder="mis: jkt48" />
+        </div>
+        <Button onClick={saveTemplate} className="w-full" size="sm">💾 Simpan Template</Button>
+      </Card>
+
+
       {/* Token Access (link-based) */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">🎟️ Token Akses Link ({tokens.length})</h3>

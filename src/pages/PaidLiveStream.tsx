@@ -231,7 +231,7 @@ const PaidLiveStream = () => {
 
     const art = new Artplayer({
       container: playerRef.current,
-      url: settings.m3u8_url,
+      url: m3u8Url,
       type: "m3u8",
       autoplay: true, muted: false, playsInline: true,
       setting: true, fullscreen: true, fullscreenWeb: true, pip: true,
@@ -298,7 +298,7 @@ const PaidLiveStream = () => {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [hasAccess, isPreShow, serverChoice, settings?.m3u8_url]);
+  }, [hasAccess, isPreShow, serverChoice, m3u8Url]);
 
   const setLevel = (lv: number) => {
     if (!hlsRef.current) return;
@@ -480,7 +480,7 @@ const PaidLiveStream = () => {
                   Server YouTube belum dikonfigurasi
                 </div>
               )
-            ) : settings?.m3u8_url ? (
+            ) : m3u8Url ? (
               <>
                 <div ref={playerRef} className="w-full h-full" />
                 <MovingWatermark code={watermarkCode} />

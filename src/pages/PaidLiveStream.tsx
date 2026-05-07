@@ -12,7 +12,7 @@ import Hls from "hls.js";
 interface Settings {
   active_server: "youtube" | "idn";
   youtube_url: string;
-  m3u8_url: string;
+  m3u8_url?: string;
   title: string;
   description: string;
   logo_url: string;

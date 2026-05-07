@@ -97,7 +97,7 @@ const PaidLiveStream = () => {
     let mounted = true;
     const load = async () => {
       const promises: any[] = [
-        supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
+        supabase.rpc('get_paid_livestream_public' as any),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
         supabase.from("livestream_moderators").select("profile_code"),
       ];
@@ -107,11 +107,13 @@ const PaidLiveStream = () => {
         promises.push(Promise.resolve({ data: null }));
       }
       if (tokenParam) {
-        promises.push(supabase.from("paid_livestream_tokens").select("token,expires_at,banned").eq("token", tokenParam).maybeSingle());
+        promises.push(supabase.rpc('validate_paid_token' as any, { _token: tokenParam }));
       } else {
         promises.push(Promise.resolve({ data: null }));
       }
-      const [{ data: s }, { data: roles }, { data: mods }, { data: a }, { data: tok }] = await Promise.all(promises);
+      const [{ data: sRaw }, { data: roles }, { data: mods }, { data: a }, { data: tokRaw }] = await Promise.all(promises);
+      const s = Array.isArray(sRaw) ? sRaw[0] : sRaw;
+      const tok = Array.isArray(tokRaw) ? tokRaw[0] : tokRaw;
       if (!mounted) return;
       if (s) { setSettings(s as any); setServerChoice((s as any).active_server || "youtube"); }
       if (roles) setOwnerIds(new Set(roles.map((r: any) => r.user_id)));

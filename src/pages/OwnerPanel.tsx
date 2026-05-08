@@ -8,6 +8,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import { Trash2, Plus, Ban, CheckCircle, Eye, XCircle, Search, Play, Lock, Megaphone, Tag, Image, Shield, Sparkles, Radio, Send, ImageIcon, Coins, Star } from 'lucide-react';
 import CoinPanel from '@/components/CoinPanel';
 import PaidLivePanel from '@/components/PaidLivePanel';
+import SongsPanel from '@/components/SongsPanel';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -19,7 +20,7 @@ const SLIDER_KEYS = ['home_slider_1', 'home_slider_2', 'home_slider_3', 'home_sl
 const OwnerPanel = () => {
   const { isOwner, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'paidlive' | 'spintransfer' | 'coins' | 'levels' | 'admins'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'replay' | 'announcements' | 'vouchers' | 'slider' | 'maintenance' | 'prizes' | 'logo' | 'live' | 'paidlive' | 'songs' | 'spintransfer' | 'coins' | 'levels' | 'admins'>('products');
   const [adminList, setAdminList] = useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
@@ -233,6 +234,7 @@ const OwnerPanel = () => {
     { key: 'levels' as const, label: '⭐ Level' },
     { key: 'live' as const, label: 'Live' },
     { key: 'paidlive' as const, label: '💎 Live Berbayar' },
+    { key: 'songs' as const, label: '🎵 Playlist Lagu' },
     { key: 'logo' as const, label: 'Logo' },
     { key: 'maintenance' as const, label: 'Akses' },
     { key: 'admins' as const, label: '🛡️ Admin' },

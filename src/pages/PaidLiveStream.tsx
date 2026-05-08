@@ -136,7 +136,7 @@ const PaidLiveStream = () => {
       } else if (a && new Date((a as any).expires_at).getTime() > Date.now()) {
         setHasAccess(true); setAccessMode("email"); setAccessExpiry((a as any).expires_at);
       } else if (tokenParam) {
-        setAccessError("Token tidak ditemukan."); setHasAccess(false);
+        setAccessError(`Token "${tokenParam}" tidak ditemukan. Mungkin sudah dihapus admin atau salah ketik. Pastikan link disalin lengkap.`); setHasAccess(false);
       } else {
         setHasAccess(false);
       }

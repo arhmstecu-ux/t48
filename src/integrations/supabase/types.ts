@@ -780,6 +780,42 @@ export type Database = {
           },
         ]
       }
+      songs: {
+        Row: {
+          artist: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          position: number
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          artist?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          position?: number
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          artist?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          position?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       spin_prizes: {
         Row: {
           chance_percent: number

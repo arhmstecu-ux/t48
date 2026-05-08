@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun } from 'lucide-react';
+import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun, Download, Headphones } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -19,6 +19,8 @@ const ThreeDotMenu = () => {
   const menuItems: { label: string; icon: any; href: string; external?: boolean }[] = [
     { label: 'Home', icon: ShoppingBag, href: '/' },
     { label: 'Katalog Show & PM', icon: Ticket, href: '/show' },
+    { label: 'Playlist Lagu JKT48', icon: Headphones, href: '/playlist' },
+    { label: '📲 Install Aplikasi', icon: Download, href: '/install' },
     { label: 'Replay Show', icon: Play, href: '/replay' },
     { label: 'Pengumuman JKT48', icon: Megaphone, href: '/announcements' },
     { label: 'Member JKT48', icon: Users, href: '/members' },

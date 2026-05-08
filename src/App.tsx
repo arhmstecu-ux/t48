@@ -28,6 +28,8 @@ import CoinTopup from "./pages/CoinTopup";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import AdminPanelPage from "./pages/AdminPanelPage";
+import Playlist from "./pages/Playlist";
+import Install from "./pages/Install";
 import NotificationPermissionBanner from "./components/NotificationPermissionBanner";
 
 const queryClient = new QueryClient();
@@ -142,6 +144,8 @@ const App = () => (
                 <Route path="/coin-topup" element={<CoinTopup />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/admin-panel" element={<AdminPanelPage />} />
+                <Route path="/playlist" element={<Playlist />} />
+                <Route path="/install" element={<Install />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               {/* @t48id watermark footer */}

@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Play, Lock, Eye, EyeOff, Coins } from 'lucide-react';
+import { Play, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-const REPLAY_COIN_PRICE = 2;
 
 interface ReplayVideo {
   id: string;
@@ -22,45 +18,26 @@ const getYoutubeEmbedUrl = (url: string): string => {
 };
 
 const ReplayShow = () => {
-  const { user } = useAuth();
   const [videos, setVideos] = useState<ReplayVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
   const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [coinBalance, setCoinBalance] = useState(0);
-  const [purchasedVideos, setPurchasedVideos] = useState<Set<string>>(new Set());
-  const [buyingVideo, setBuyingVideo] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     const loadVideos = async () => {
       const { data } = await supabase.rpc('list_replay_videos' as any);
-      if (data) setVideos(data as ReplayVideo[]);
-      setLoading(false);
+      if (mounted && data) setVideos(data as ReplayVideo[]);
+      if (mounted) setLoading(false);
     };
     loadVideos();
+    const ch = supabase.channel('replay-rt')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'replay_videos' }, () => loadVideos())
+      .subscribe();
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const loadBalance = async () => {
-      const { data } = await supabase.from('coin_balances').select('balance').eq('user_id', user.id).maybeSingle();
-      if (data) setCoinBalance(data.balance);
-    };
-    const loadPurchases = async () => {
-      const { data } = await supabase.from('replay_purchases').select('video_id').eq('user_id', user.id);
-      if (data) setPurchasedVideos(new Set(data.map(d => d.video_id)));
-    };
-    loadBalance();
-    loadPurchases();
-  }, [user]);
-
-  useEffect(() => {
-    purchasedVideos.forEach(videoId => {
-      setUnlocked(prev => ({ ...prev, [videoId]: true }));
-    });
-  }, [purchasedVideos]);
 
   const handleUnlock = async (video: ReplayVideo) => {
     const input = passwordInputs[video.id] || '';
@@ -73,21 +50,6 @@ const ReplayShow = () => {
     }
   };
 
-  const handleBuyWithCoin = async (video: ReplayVideo) => {
-    if (!user) { toast.error('Silakan login terlebih dahulu!'); return; }
-    setBuyingVideo(video.id);
-    const { error } = await supabase.rpc('purchase_replay' as any, { _video_id: video.id });
-    if (error) {
-      toast.error(error.message?.includes('Insufficient') ? `Koin tidak cukup! Butuh ${REPLAY_COIN_PRICE} koin` : 'Gagal membeli replay');
-    } else {
-      setCoinBalance(prev => Math.max(0, prev - REPLAY_COIN_PRICE));
-      setPurchasedVideos(prev => new Set([...prev, video.id]));
-      setUnlocked(prev => ({ ...prev, [video.id]: true }));
-      toast.success(`Replay "${video.title}" berhasil dibuka! 🎉`);
-    }
-    setBuyingVideo(null);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -97,11 +59,6 @@ const ReplayShow = () => {
             <Play className="inline w-8 h-8 mr-2" />Replay Show
           </h1>
           <p className="text-muted-foreground">Tonton ulang pertunjukan JKT48 favoritmu</p>
-          {user && (
-            <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
-              <Coins className="w-4 h-4" /> Saldo: {coinBalance} Koin
-            </div>
-          )}
         </div>
 
         {loading ? (
@@ -115,78 +72,51 @@ const ReplayShow = () => {
           <div className="space-y-6">
             {videos.map((video, i) => {
               const embedUrl = getYoutubeEmbedUrl(video.youtube_url);
+              const isOpen = unlocked[video.id] || !video.has_password;
               return (
-                <motion.div key={video.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.05 }}
                   className="glass-card rounded-2xl overflow-hidden">
                   <div className="p-5">
                     <h3 className="font-bold text-foreground text-lg mb-1">{video.title}</h3>
                     <p className="text-xs text-muted-foreground mb-3">
                       {new Date(video.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
-                    {unlocked[video.id] ? (
-                      <div>
-                        {purchasedVideos.has(video.id) && (
-                          <p className="text-xs text-accent font-medium mb-2">✅ Dibeli dengan koin — akses permanen</p>
+                    {isOpen ? (
+                      <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                        {embedUrl ? (
+                          <iframe src={embedUrl} title={video.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                            allowFullScreen className="w-full h-full border-0"
+                            referrerPolicy="strict-origin-when-cross-origin" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <p className="text-muted-foreground text-sm">URL video tidak valid</p>
+                          </div>
                         )}
-                        <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                          {embedUrl ? (
-                            <iframe 
-                              src={embedUrl} 
-                              title={video.title}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                              allowFullScreen 
-                              className="w-full h-full border-0"
-                              referrerPolicy="strict-origin-when-cross-origin"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <p className="text-muted-foreground text-sm">URL video tidak valid</p>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     ) : (
                       <div className="aspect-video rounded-xl bg-secondary/50 flex flex-col items-center justify-center gap-4">
                         <Lock className="w-12 h-12 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground font-medium">Video ini dilindungi</p>
-                        
-                        {user && (
-                          <button onClick={() => handleBuyWithCoin(video)} disabled={buyingVideo === video.id}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground font-medium text-sm hover:opacity-90 transition disabled:opacity-50">
-                            <Coins className="w-4 h-4" />
-                            {buyingVideo === video.id ? 'Memproses...' : `Beli dengan ${REPLAY_COIN_PRICE} Koin`}
+                        <p className="text-sm text-muted-foreground font-medium">Video ini dilindungi sandi</p>
+                        <div className="flex flex-col items-center gap-2 w-64">
+                          <div className="relative w-full">
+                            <input type={showPassword[video.id] ? 'text' : 'password'}
+                              value={passwordInputs[video.id] || ''}
+                              onChange={e => setPasswordInputs(prev => ({ ...prev, [video.id]: e.target.value }))}
+                              placeholder="Masukkan sandi..."
+                              className="w-full px-4 py-2 pr-10 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              onKeyDown={e => e.key === 'Enter' && handleUnlock(video)} />
+                            <button onClick={() => setShowPassword(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
+                              {showPassword[video.id] ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                            </button>
+                          </div>
+                          {errors[video.id] && <p className="text-xs text-destructive">{errors[video.id]}</p>}
+                          <button onClick={() => handleUnlock(video)}
+                            className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
+                            Buka Video
                           </button>
-                        )}
-                        
-                        {video.has_password && (
-                          <>
-                            <div className="flex items-center gap-3 w-64">
-                              <div className="flex-1 h-px bg-border" />
-                              <span className="text-xs text-muted-foreground">atau</span>
-                              <div className="flex-1 h-px bg-border" />
-                            </div>
-
-                            <div className="flex flex-col items-center gap-2 w-64">
-                              <div className="relative w-full">
-                                <input type={showPassword[video.id] ? 'text' : 'password'}
-                                  value={passwordInputs[video.id] || ''}
-                                  onChange={e => setPasswordInputs(prev => ({ ...prev, [video.id]: e.target.value }))}
-                                  placeholder="Masukkan sandi..."
-                                  className="w-full px-4 py-2 pr-10 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                  onKeyDown={e => e.key === 'Enter' && handleUnlock(video)} />
-                                <button onClick={() => setShowPassword(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
-                                  {showPassword[video.id] ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                                </button>
-                              </div>
-                              {errors[video.id] && <p className="text-xs text-destructive">{errors[video.id]}</p>}
-                              <button onClick={() => handleUnlock(video)}
-                                className="px-6 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
-                                Buka Video
-                              </button>
-                            </div>
-                          </>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -3,15 +3,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera, Star } from 'lucide-react';
+import { Camera, Heart, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import type { Tables } from '@/integrations/supabase/types';
+import { jkt48Members } from '@/data/members';
+import OshiPicker from '@/components/OshiPicker';
 
 const MyPage = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [oshiOpen, setOshiOpen] = useState(false);
+  const [oshiId, setOshiId] = useState<number | null>(null);
 
   const { data: purchases, loading } = useRealtimeTable<Tables<'purchases'>>(
     'purchases',
@@ -21,32 +25,14 @@ const MyPage = () => {
 
   const { data: purchaseItems } = useRealtimeTable<Tables<'purchase_items'>>('purchase_items', undefined, !!user);
 
-  const [userLevel, setUserLevel] = useState<{ level: number; total_topup_coins: number } | null>(null);
-  const [levelRewards, setLevelRewards] = useState<any[]>([]);
+  useEffect(() => {
+    setOshiId((profile as any)?.oshi_member_id ?? null);
+  }, [profile]);
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data } = await supabase.from('user_levels' as any).select('*').eq('user_id', user.id).single();
-      if (data) setUserLevel(data as any);
-    };
-    load();
-    const ch = supabase.channel('my-level-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'user_levels' }, () => load()).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user]);
-
-  useEffect(() => {
-    const load = async () => { const { data } = await supabase.from('level_rewards' as any).select('*').order('level'); if (data) setLevelRewards(data as any[]); };
-    load();
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
-    }
+    if (!authLoading && !user) navigate('/login');
   }, [authLoading, user, navigate]);
 
-  // Show loading only while auth is loading, not while waiting for profile
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -57,10 +43,7 @@ const MyPage = () => {
       </div>
     );
   }
-
-  if (!user) {
-    return null; // Will redirect via useEffect
-  }
+  if (!user) return null;
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
@@ -79,6 +62,21 @@ const MyPage = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleSelectOshi = async (memberId: number) => {
+    setOshiId(memberId);
+    const { error } = await supabase.from('profiles').update({ oshi_member_id: memberId } as any).eq('user_id', user.id);
+    if (error) toast.error('Gagal menyimpan oshi');
+    else toast.success('Oshi disimpan! 💖');
+  };
+
+  const handleClearOshi = async () => {
+    setOshiId(null);
+    await supabase.from('profiles').update({ oshi_member_id: null } as any).eq('user_id', user.id);
+    toast.success('Oshi dihapus');
+  };
+
+  const oshi = oshiId ? jkt48Members.find(m => m.id === oshiId) : null;
+
   const displayName = profile?.username || user.email?.split('@')[0] || 'User';
   const displayEmail = profile?.email || user.email || '';
   const displayPhone = profile?.phone || '';
@@ -87,7 +85,7 @@ const MyPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <div className="glass-card rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -112,39 +110,50 @@ const MyPage = () => {
                 )}
                 <p className="text-sm text-muted-foreground">{displayEmail}</p>
                 {displayPhone && <p className="text-sm text-muted-foreground">{displayPhone}</p>}
-                {userLevel && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Star className="w-4 h-4 text-warning" />
-                    <span className="text-sm font-bold text-warning">Level {userLevel.level}</span>
-                    <span className="text-xs text-muted-foreground">({userLevel.total_topup_coins} koin total topup)</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* Level Progress */}
-          {userLevel && userLevel.level < 20 && (
-            <div className="glass-card rounded-2xl p-5 mb-6">
-              <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-warning" /> Progress Level</h2>
-              <div className="text-sm text-muted-foreground mb-2">
-                {(() => {
-                  const lv = userLevel.level;
-                  const coinsNeeded = lv < 3 ? 4 : lv < 8 ? 8 : 13;
-                  return `Topup ${coinsNeeded} koin lagi untuk naik ke Level ${lv + 1}`;
-                })()}
-              </div>
-              {(() => {
-                const reward = levelRewards.find((r: any) => r.level === userLevel.level);
-                return reward?.reward_name ? (
-                  <div className="bg-warning/10 rounded-lg p-3 mt-2">
-                    <p className="text-xs font-bold text-warning">🎁 Hadiah Level {userLevel.level}: {reward.reward_name}</p>
-                    {reward.reward_description && <p className="text-xs text-muted-foreground mt-0.5">{reward.reward_description}</p>}
+          {/* Oshi card */}
+          <div className="glass-card rounded-2xl p-5 mb-6 border-l-4 border-primary">
+            <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary fill-primary" /> Oshi-ku
+            </h2>
+            {oshi ? (
+              <div className="flex items-center gap-4">
+                <img
+                  src={oshi.photo}
+                  alt={oshi.nickname}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-24 h-24 rounded-2xl object-cover border-2 border-primary shadow-lg"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-extrabold text-foreground">{oshi.nickname}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{oshi.name}</p>
+                  <p className="text-xs text-muted-foreground">Gen {oshi.generation} · {oshi.fanbase}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => setOshiOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
+                      Ganti
+                    </button>
+                    <button onClick={handleClearOshi}
+                      className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-bold hover:bg-destructive/20 transition flex items-center gap-1">
+                      <Trash2 className="w-3 h-3" /> Hapus
+                    </button>
                   </div>
-                ) : null;
-              })()}
-            </div>
-          )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-sm text-muted-foreground mb-3">Belum pilih oshi. Pilih member JKT48 favoritmu!</p>
+                <button onClick={() => setOshiOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl gradient-primary text-primary-foreground font-bold text-sm">
+                  <Heart className="w-4 h-4" /> Pilih Oshi
+                </button>
+              </div>
+            )}
+          </div>
 
           <h2 className="text-xl font-bold text-foreground mb-4">Riwayat Pembelian</h2>
           {loading ? (
@@ -156,10 +165,10 @@ const MyPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {purchases.map((p, i) => {
+              {purchases.map((p) => {
                 const items = purchaseItems.filter(pi => pi.purchase_id === p.id);
                 return (
-                  <motion.div key={p.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="glass-card rounded-xl p-4">
+                  <div key={p.id} className="glass-card rounded-xl p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
@@ -167,7 +176,7 @@ const MyPage = () => {
                           <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${p.status === 'completed' ? 'bg-success/20 text-success' : p.status === 'confirmed' ? 'bg-primary/20 text-primary' : 'bg-warning/20 text-warning'}`}>
                             {p.status === 'pending' ? 'Menunggu' : p.status === 'confirmed' ? 'Dikonfirmasi' : 'Selesai'}
                           </span>
-                          <span className="text-xs text-muted-foreground">via {p.payment_method.toUpperCase()}</span>
+                          <span className="text-xs text-muted-foreground">via WA</span>
                         </div>
                       </div>
                       <span className="font-bold text-gradient">{formatPrice(p.total)}</span>
@@ -177,13 +186,15 @@ const MyPage = () => {
                         <p key={item.id} className="text-sm text-foreground">{item.product_name} x{item.quantity}</p>
                       ))}
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           )}
         </motion.div>
       </main>
+
+      <OshiPicker open={oshiOpen} onClose={() => setOshiOpen(false)} onSelect={handleSelectOshi} currentId={oshiId} />
     </div>
   );
 };

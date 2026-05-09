@@ -86,87 +86,6 @@ export type Database = {
         }
         Relationships: []
       }
-      coin_balances: {
-        Row: {
-          balance: number
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          balance?: number
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          balance?: number
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      coin_topup_requests: {
-        Row: {
-          code: string
-          coin_amount: number
-          confirmed_at: string | null
-          created_at: string
-          id: string
-          price: number
-          status: string
-          user_id: string
-        }
-        Insert: {
-          code: string
-          coin_amount: number
-          confirmed_at?: string | null
-          created_at?: string
-          id?: string
-          price: number
-          status?: string
-          user_id: string
-        }
-        Update: {
-          code?: string
-          coin_amount?: number
-          confirmed_at?: string | null
-          created_at?: string
-          id?: string
-          price?: number
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      coin_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          description: string | null
-          id: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       group_members: {
         Row: {
           id: string
@@ -212,30 +131,6 @@ export type Database = {
           profile_photo?: string | null
           user_id?: string
           username?: string
-        }
-        Relationships: []
-      }
-      level_rewards: {
-        Row: {
-          created_at: string
-          id: string
-          level: number
-          reward_description: string
-          reward_name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          level: number
-          reward_description?: string
-          reward_name?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          level?: number
-          reward_description?: string
-          reward_name?: string
         }
         Relationships: []
       }
@@ -512,7 +407,6 @@ export type Database = {
       products: {
         Row: {
           category: string | null
-          coin_price: number | null
           created_at: string
           description: string | null
           id: string
@@ -524,7 +418,6 @@ export type Database = {
         }
         Insert: {
           category?: string | null
-          coin_price?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -536,7 +429,6 @@ export type Database = {
         }
         Update: {
           category?: string | null
-          coin_price?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -554,6 +446,7 @@ export type Database = {
           email: string
           id: string
           is_blacklisted: boolean
+          oshi_member_id: number | null
           phone: string | null
           profile_code: string | null
           profile_photo: string | null
@@ -566,6 +459,7 @@ export type Database = {
           email: string
           id?: string
           is_blacklisted?: boolean
+          oshi_member_id?: number | null
           phone?: string | null
           profile_code?: string | null
           profile_photo?: string | null
@@ -578,6 +472,7 @@ export type Database = {
           email?: string
           id?: string
           is_blacklisted?: boolean
+          oshi_member_id?: number | null
           phone?: string | null
           profile_code?: string | null
           profile_photo?: string | null
@@ -683,38 +578,6 @@ export type Database = {
         }
         Relationships: []
       }
-      replay_purchases: {
-        Row: {
-          coin_amount: number
-          created_at: string
-          id: string
-          user_id: string
-          video_id: string
-        }
-        Insert: {
-          coin_amount?: number
-          created_at?: string
-          id?: string
-          user_id: string
-          video_id: string
-        }
-        Update: {
-          coin_amount?: number
-          created_at?: string
-          id?: string
-          user_id?: string
-          video_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "replay_purchases_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "replay_videos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       replay_videos: {
         Row: {
           created_at: string
@@ -816,89 +679,6 @@ export type Database = {
         }
         Relationships: []
       }
-      spin_prizes: {
-        Row: {
-          chance_percent: number
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          chance_percent?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          sort_order?: number
-        }
-        Update: {
-          chance_percent?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      spin_results: {
-        Row: {
-          created_at: string
-          id: string
-          prize_id: string | null
-          prize_name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          prize_id?: string | null
-          prize_name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          prize_id?: string | null
-          prize_name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "spin_results_prize_id_fkey"
-            columns: ["prize_id"]
-            isOneToOne: false
-            referencedRelation: "spin_prizes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_levels: {
-        Row: {
-          id: string
-          level: number
-          total_topup_coins: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          level?: number
-          total_topup_coins?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          level?: number
-          total_topup_coins?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           id: string
@@ -914,113 +694,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      user_spins: {
-        Row: {
-          created_at: string
-          id: string
-          purchase_id: string | null
-          spins_total: number
-          spins_used: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          purchase_id?: string | null
-          spins_total?: number
-          spins_used?: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          purchase_id?: string | null
-          spins_total?: number
-          spins_used?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_spins_purchase_id_fkey"
-            columns: ["purchase_id"]
-            isOneToOne: true
-            referencedRelation: "purchases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      voucher_usage: {
-        Row: {
-          id: string
-          purchase_id: string
-          used_at: string
-          user_id: string
-          voucher_id: string
-        }
-        Insert: {
-          id?: string
-          purchase_id: string
-          used_at?: string
-          user_id: string
-          voucher_id: string
-        }
-        Update: {
-          id?: string
-          purchase_id?: string
-          used_at?: string
-          user_id?: string
-          voucher_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "voucher_usage_purchase_id_fkey"
-            columns: ["purchase_id"]
-            isOneToOne: false
-            referencedRelation: "purchases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "voucher_usage_voucher_id_fkey"
-            columns: ["voucher_id"]
-            isOneToOne: false
-            referencedRelation: "vouchers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vouchers: {
-        Row: {
-          code: string
-          created_at: string
-          discount_percent: number
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number
-          used_count: number
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          discount_percent?: number
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number
-          used_count?: number
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          discount_percent?: number
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number
-          used_count?: number
         }
         Relationships: []
       }
@@ -1105,19 +778,6 @@ export type Database = {
           id: string
           title: string
           youtube_url: string
-        }[]
-      }
-      purchase_replay: { Args: { _video_id: string }; Returns: boolean }
-      spend_coins: {
-        Args: { _amount: number; _description: string; _type: string }
-        Returns: number
-      }
-      spin_wheel: {
-        Args: never
-        Returns: {
-          prize_description: string
-          prize_id: string
-          prize_name: string
         }[]
       }
       validate_paid_token: {

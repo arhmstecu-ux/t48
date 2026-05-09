@@ -95,7 +95,7 @@ const Index = () => {
                   <h2 className="text-lg font-bold text-foreground">Cara Membeli Show & PM</h2>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Beli lewat katalog dan bayar pakai <strong className="text-accent">QRIS</strong>, <strong className="text-primary">DANA</strong>, atau <strong className="text-success">GoPay</strong>. Pilih metode pembayaran yang paling nyaman! 💰
+                  Klik <strong className="text-success">Beli via WhatsApp</strong> di katalog — kamu langsung diarahkan ke chat owner untuk konfirmasi pembayaran. Cepat & aman! 💬
                 </p>
               </div>
             </motion.div>
@@ -156,7 +156,7 @@ const Index = () => {
               { to: '/replay', icon: Play, label: 'Replay', color: 'text-accent', delay: 0.4 },
               { to: '/announcements', icon: Megaphone, label: 'Pengumuman', color: 'text-warning', delay: 0.45 },
               { to: '/ranking', icon: Trophy, label: 'Ranking', color: 'text-success', delay: 0.5 },
-              { to: '/spin', icon: Sparkles, label: 'Spin', color: 'text-warning', delay: 0.55 },
+              { to: '/playlist', icon: Sparkles, label: 'Playlist', color: 'text-warning', delay: 0.55 },
               { to: '/live', icon: Radio, label: 'Live', color: 'text-destructive', delay: 0.6 },
             ].map(item => (
               <motion.div key={item.to} initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: item.delay, type: 'spring', stiffness: 200 }}>

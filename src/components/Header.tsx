@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Coins } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThreeDotMenu from './ThreeDotMenu';
 import Clock from './Clock';
@@ -11,19 +10,18 @@ import defaultLogo from '@/assets/logo.jpg';
 
 const Header = () => {
   const { user, profile, logout, isOwner } = useAuth();
-  const { items } = useCart();
   const navigate = useNavigate();
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const [logo, setLogo] = useState(defaultLogo);
 
   useEffect(() => {
+    let mounted = true;
     const load = async () => {
       const { data } = await supabase.from('app_settings').select('value').eq('key', 'site_logo').maybeSingle();
-      if (data?.value) setLogo(data.value);
+      if (mounted && data?.value) setLogo(data.value);
     };
     load();
     const ch = supabase.channel('logo-rt').on('postgres_changes' as any, { event: '*', schema: 'public', table: 'app_settings' }, () => load()).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, []);
 
   return (
@@ -41,15 +39,6 @@ const Header = () => {
           {user ? (
             <>
               <NotificationBell />
-              <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary hover:scale-110 transition-all duration-200">
-                <ShoppingCart className="w-5 h-5 text-foreground" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full gradient-primary text-primary-foreground text-xs flex items-center justify-center font-bold animate-bounce" style={{ animationDuration: '2s' }}>{itemCount}</span>
-                )}
-              </Link>
-              <Link to="/coin-topup" className="p-2 rounded-lg hover:bg-secondary hover:scale-110 transition-all duration-200">
-                <Coins className="w-5 h-5 text-warning" />
-              </Link>
               <Link to="/my-page" className="p-2 rounded-lg hover:bg-secondary transition-colors">
                 <User className="w-5 h-5 text-foreground" />
               </Link>

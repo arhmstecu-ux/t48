@@ -24,7 +24,7 @@ const AdminPanel = () => {
   const [liveActive, setLiveActive] = useState(false);
 
   // Product
-  const [newProduct, setNewProduct] = useState({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: 0, description: '', category: 'Show', image: '', show_date: '' });
   const [showAdd, setShowAdd] = useState(false);
 
   const { data: products } = useRealtimeTable<Tables<'products'>>('products');
@@ -74,11 +74,11 @@ const AdminPanel = () => {
     e.preventDefault();
     const { error } = await supabase.from('products').insert({
       name: newProduct.name, price: newProduct.price, description: newProduct.description,
-      category: newProduct.category, image: newProduct.image, coin_price: newProduct.coin_price,
+      category: newProduct.category, image: newProduct.image,
       show_date: newProduct.show_date ? new Date(newProduct.show_date).toISOString() : null,
     } as any);
     if (error) { toast.error('Gagal'); return; }
-    setNewProduct({ name: '', price: 0, coin_price: 0, description: '', category: 'Show', image: '', show_date: '' });
+    setNewProduct({ name: '', price: 0, description: '', category: 'Show', image: '', show_date: '' });
     setShowAdd(false);
     toast.success('Produk ditambahkan!');
   };
@@ -146,10 +146,7 @@ const AdminPanel = () => {
             {showAdd && (
               <form onSubmit={handleAddProduct} className="glass-card rounded-xl p-6 mb-6 space-y-3">
                 <input placeholder="Nama produk" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                <div className="grid grid-cols-2 gap-3">
-                  <input placeholder="Harga QRIS (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
-                  <input placeholder="Harga Koin" type="number" value={newProduct.coin_price || ''} onChange={e => setNewProduct({...newProduct, coin_price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
-                </div>
+                <input placeholder="Harga (Rp)" type="number" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" required />
                 <input placeholder="Deskripsi" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <input placeholder="Kategori" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground" />
                 <div>
@@ -183,7 +180,6 @@ const AdminPanel = () => {
                       <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-primary font-bold">{formatPrice(p.price)}</span>
-                        {(p as any).coin_price > 0 && <span className="text-xs text-accent font-bold">🪙 {(p as any).coin_price}</span>}
                       </div>
                     </div>
                   </div>

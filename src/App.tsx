@@ -61,19 +61,41 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    // Hard fail-safe: NEVER block UI more than 2s even if backend is down/CORS-blocked
+    const failSafe = setTimeout(() => { if (!cancelled) setChecking(false); }, 2000);
+
     const check = async () => {
-      const { data } = await supabase.from("app_settings").select("*").in("key", ["maintenance_mode", "maintenance_message"]);
-      if (data) {
-        const mm = data.find(d => d.key === "maintenance_mode");
-        const msg = data.find(d => d.key === "maintenance_message");
-        setMaintenance(mm?.value === "true");
-        if (msg?.value) setMessage(msg.value);
+      try {
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("*")
+          .in("key", ["maintenance_mode", "maintenance_message"]);
+        if (cancelled) return;
+        if (!error && data) {
+          const mm = data.find(d => d.key === "maintenance_mode");
+          const msg = data.find(d => d.key === "maintenance_message");
+          setMaintenance(mm?.value === "true");
+          if (msg?.value) setMessage(msg.value);
+        }
+      } catch (e) {
+        // backend unreachable — don't block the site
+        console.warn("[maintenance] check failed, opening site anyway", e);
+      } finally {
+        if (!cancelled) setChecking(false);
       }
-      setChecking(false);
     };
     check();
-    const ch = supabase.channel("maintenance-rt").on("postgres_changes" as any, { event: "*", schema: "public", table: "app_settings" }, () => check()).subscribe();
-    return () => { supabase.removeChannel(ch); };
+
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase.channel("maintenance-rt").on("postgres_changes" as any, { event: "*", schema: "public", table: "app_settings" }, () => check()).subscribe();
+    } catch {}
+    return () => {
+      cancelled = true;
+      clearTimeout(failSafe);
+      if (ch) { try { supabase.removeChannel(ch); } catch {} }
+    };
   }, []);
 
   if (checking || authLoading) return null;

@@ -201,6 +201,8 @@ Deno.serve(async (req) => {
       if (cr) respHeaders["Content-Range"] = cr;
       const ar = r.headers.get("accept-ranges");
       if (ar) respHeaders["Accept-Ranges"] = ar;
+      // HLS segments are immutable — cache aggressively to reduce lag.
+      respHeaders["Cache-Control"] = "public, max-age=300, immutable";
       return new Response(r.body, { status: r.status, headers: respHeaders });
     }
 

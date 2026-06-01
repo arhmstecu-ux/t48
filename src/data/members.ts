@@ -42,15 +42,13 @@ export const jkt48Members: JKT48Member[] = [
   { id: 19, name: 'Raisha Syifa Wardhana', nickname: 'Raisha', birthdate: '2007-11-11', generation: 10, status: 'active', fanbase: 'Raishanrise', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/raisha_g85ajn.jpg' },
 
   // Gen 11
-  { id: 20, name: 'Alya Amanda Fatihah', nickname: 'Alya', birthdate: '2006-08-26', generation: 11, status: 'active', fanbase: 'Alamanda', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/alya_cfy2dy.jpg' },
   { id: 21, name: 'Anindya Ramadhani Purnomo', nickname: 'Anindya', birthdate: '2005-10-18', generation: 11, status: 'active', fanbase: 'Aninimous', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/anindya_elmsrh.jpg' },
   { id: 22, name: 'Cathleen Hana Nixie', nickname: 'Cathy', birthdate: '2009-05-28', generation: 11, status: 'active', fanbase: 'Cathleenexus', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/cathy_swseqw.jpg' },
   { id: 23, name: 'Celline Thefannie', nickname: 'Elin', birthdate: '2007-04-09', generation: 11, status: 'active', fanbase: 'Cellineyours', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/elin_ni6m5z.jpg' },
-  { id: 24, name: 'Chelsea Davina Norman', nickname: 'Chelsea', birthdate: '2009-12-23', generation: 11, status: 'active', fanbase: 'Chelsealand', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/chelsea_davina_r0rvqy.jpg' },
   { id: 25, name: 'Cynthia Yaputera', nickname: 'Cynthia', birthdate: '2003-11-22', generation: 11, status: 'active', fanbase: 'Cynthiaction', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/cynthia_adcpdu.jpg' },
   { id: 26, name: 'Dena Natalia Ang', nickname: 'Danella', birthdate: '2005-12-16', generation: 11, status: 'active', fanbase: 'Denalize', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/danella_rg4dux.jpg' },
   { id: 27, name: 'Desy Natalia Ang', nickname: 'Daisy', birthdate: '2005-12-16', generation: 11, status: 'active', fanbase: 'Daisyne', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/daisy_bjn1de.jpg' },
-  { id: 28, name: 'Gendis Mayrannisa Setiawan', nickname: 'Gendis', birthdate: '2010-06-23', generation: 11, status: 'suspended', fanbase: 'Sahabat Gendis', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/gendis_c7hrct.jpg' },
+  { id: 28, name: 'Gendis Mayrannisa Setiawan', nickname: 'Gendis', birthdate: '2010-06-23', generation: 11, status: 'active', fanbase: 'Sahabat Gendis', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/gendis_c7hrct.jpg' },
   { id: 29, name: 'Grace Octaviani Tanujaya', nickname: 'Gracie', birthdate: '2007-10-18', generation: 11, status: 'active', fanbase: 'Gracieluv', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/gracie_vv4pap.jpg' },
   { id: 30, name: 'Greesella Sophina Adhalia', nickname: 'Greesel', birthdate: '2006-01-10', generation: 11, status: 'active', fanbase: 'Degrees', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/greesella_adhalia_fksjuw.jpg' },
   { id: 31, name: 'Michelle Alexandra Suandi', nickname: 'Michie', birthdate: '2009-04-22', generation: 11, status: 'active', fanbase: 'Michiban', photo: 'https://res.cloudinary.com/dak2dhea9/image/upload/michie_cz97cu.jpg' },

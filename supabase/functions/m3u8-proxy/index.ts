@@ -46,33 +46,52 @@ function isSafeUrl(raw: string): boolean {
   } catch { return false; }
 }
 
+// In-memory cache for access checks (per-isolate, ~30s TTL) to avoid hitting
+// the DB on every segment request, which is the main source of HLS lag.
+const accessCache = new Map<string, { ok: boolean; reason?: string; exp: number }>();
+const ACCESS_TTL_MS = 30_000;
+
 async function checkAccess(req: Request): Promise<{ ok: boolean; reason?: string }> {
   const auth = req.headers.get("Authorization");
   if (!auth) return { ok: false, reason: "no auth" };
+
+  const cached = accessCache.get(auth);
+  if (cached && cached.exp > Date.now()) return { ok: cached.ok, reason: cached.reason };
+
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: auth } },
   });
   const { data: userData } = await userClient.auth.getUser();
   const user = userData?.user;
-  if (!user?.email) return { ok: false, reason: "not signed in" };
+  if (!user?.email) {
+    const res = { ok: false, reason: "not signed in" };
+    accessCache.set(auth, { ...res, exp: Date.now() + 5_000 });
+    return res;
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  // admin role bypass
-  const { data: roles } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-  if (roles?.some((r: any) => r.role === "admin")) return { ok: true };
-
-  const { data: row } = await admin
-    .from("paid_livestream_access")
-    .select("expires_at")
-    .ilike("email", user.email)
-    .maybeSingle();
-  if (!row) return { ok: false, reason: "no access" };
-  if (new Date(row.expires_at).getTime() < Date.now())
-    return { ok: false, reason: "expired" };
-  return { ok: true };
+  const [{ data: roles }, { data: row }] = await Promise.all([
+    admin.from("user_roles").select("role").eq("user_id", user.id),
+    admin.from("paid_livestream_access").select("expires_at").ilike("email", user.email).maybeSingle(),
+  ]);
+  if (roles?.some((r: any) => r.role === "admin")) {
+    const res = { ok: true };
+    accessCache.set(auth, { ...res, exp: Date.now() + ACCESS_TTL_MS });
+    return res;
+  }
+  if (!row) {
+    const res = { ok: false, reason: "no access" };
+    accessCache.set(auth, { ...res, exp: Date.now() + 5_000 });
+    return res;
+  }
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    const res = { ok: false, reason: "expired" };
+    accessCache.set(auth, { ...res, exp: Date.now() + 5_000 });
+    return res;
+  }
+  const res = { ok: true };
+  accessCache.set(auth, { ...res, exp: Date.now() + ACCESS_TTL_MS });
+  return res;
 }
 
 function rewritePlaylist(text: string, baseUrl: string, proxyBase: string) {
@@ -182,6 +201,8 @@ Deno.serve(async (req) => {
       if (cr) respHeaders["Content-Range"] = cr;
       const ar = r.headers.get("accept-ranges");
       if (ar) respHeaders["Accept-Ranges"] = ar;
+      // HLS segments are immutable — cache aggressively to reduce lag.
+      respHeaders["Cache-Control"] = "public, max-age=300, immutable";
       return new Response(r.body, { status: r.status, headers: respHeaders });
     }
 

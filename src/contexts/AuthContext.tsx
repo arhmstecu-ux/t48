@@ -26,18 +26,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const [{ data: profileData }, { data: roles }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_roles').select('role').eq('user_id', userId),
-    ]);
-    setProfile(profileData ?? null);
-    setIsOwner(roles?.some(r => r.role === 'admin') || false);
+    try {
+      const [{ data: profileData }, { data: roles }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+      ]);
+      setProfile(profileData ?? null);
+      setIsOwner(roles?.some(r => r.role === 'admin') || false);
+    } catch (e) {
+      console.warn('[auth] profile fetch failed', e);
+    }
   };
 
   useEffect(() => {
     let mounted = true;
+    // Fail-safe: never keep the app in "loading" forever
+    const failSafe = setTimeout(() => { if (mounted) setLoading(false); }, 2500);
 
-    // Restore session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
@@ -47,9 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setLoading(false);
       }
+    }).catch((e) => {
+      console.warn('[auth] getSession failed', e);
+      if (mounted) setLoading(false);
     });
 
-    // Listen for subsequent auth changes (non-blocking)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       setSession(session);
@@ -62,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    return () => { mounted = false; subscription.unsubscribe(); };
+    return () => { mounted = false; clearTimeout(failSafe); subscription.unsubscribe(); };
   }, []);
 
   // Realtime profile updates

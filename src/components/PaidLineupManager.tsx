@@ -42,7 +42,7 @@ const PaidLineupManager = () => {
     return jkt48Members.filter(m =>
       !inLineup.has(m.id) &&
       (m.nickname.toLowerCase().includes(q) || m.name.toLowerCase().includes(q) || `gen${m.generation}`.includes(q))
-    ).slice(0, 12);
+    ).slice(0, 60);
   }, [search, inLineup]);
 
   const addMember = async (mId: number) => {

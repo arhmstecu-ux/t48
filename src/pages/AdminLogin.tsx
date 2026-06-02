@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Shield } from 'lucide-react';
 
-const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
+const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> => {
   return await new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => reject(new Error(message)), ms);
 
@@ -41,25 +41,29 @@ const AdminLogin = () => {
         return;
       }
 
-      const { data: { user }, error: userError } = await withTimeout(
-        supabase.auth.getUser(),
+      const getUserResult = await withTimeout(
+        Promise.resolve(supabase.auth.getUser()),
         8000,
         'Gagal memuat data akun admin. Coba lagi.'
       );
+      const { data: { user }, error: userError } = getUserResult;
 
       if (userError || !user) {
         toast.error(userError?.message || 'Gagal mendapatkan data user');
         return;
       }
 
-      const { data: roles, error: roleError } = await withTimeout(
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id),
+      const roleResult = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+        ),
         8000,
         'Pengecekan role admin terlalu lama. Coba lagi.'
       );
+      const { data: roles, error: roleError } = roleResult;
 
       if (roleError) {
         toast.error(roleError.message);

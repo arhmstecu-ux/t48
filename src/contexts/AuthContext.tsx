@@ -18,6 +18,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> => {
+  return await new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -57,12 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (mounted) setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        window.setTimeout(() => {
+          if (!mounted) return;
+          void fetchProfile(session.user!.id);
+        }, 0);
       } else {
         setProfile(null);
         setIsOwner(false);
@@ -85,22 +105,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.id]);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        12000,
+        'Login terlalu lama. Coba lagi sebentar atau refresh halaman.'
+      );
+
+      if (error) return { error: error.message };
+      return {};
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Login gagal. Coba lagi.',
+      };
+    }
   };
 
   const register = async (data: { email: string; password: string; username: string; phone: string }): Promise<{ error?: string }> => {
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: { username: data.username, phone: data.phone },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: { username: data.username, phone: data.phone },
+            emailRedirectTo: window.location.origin,
+          },
+        }),
+        12000,
+        'Pendaftaran terlalu lama. Coba lagi sebentar.'
+      );
+
+      if (error) return { error: error.message };
+      return {};
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Pendaftaran gagal. Coba lagi.',
+      };
+    }
   };
 
   const logout = async () => {

@@ -6,6 +6,23 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Shield } from 'lucide-react';
 
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
+  return await new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+};
+
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,38 +34,53 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password);
-    if (result.error) {
+    try {
+      const result = await login(email, password);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      const { data: { user }, error: userError } = await withTimeout(
+        supabase.auth.getUser(),
+        8000,
+        'Gagal memuat data akun admin. Coba lagi.'
+      );
+
+      if (userError || !user) {
+        toast.error(userError?.message || 'Gagal mendapatkan data user');
+        return;
+      }
+
+      const { data: roles, error: roleError } = await withTimeout(
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id),
+        8000,
+        'Pengecekan role admin terlalu lama. Coba lagi.'
+      );
+
+      if (roleError) {
+        toast.error(roleError.message);
+        return;
+      }
+
+      const isAdmin = roles?.some(r => r.role === 'admin');
+
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        toast.error('Akses ditolak! Akun ini bukan admin/owner.');
+        return;
+      }
+
+      toast.success('Login admin berhasil!');
+      navigate('/owner');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login admin gagal.');
+    } finally {
       setLoading(false);
-      toast.error(result.error);
-      return;
     }
-
-    // Check if user has admin role
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      toast.error('Gagal mendapatkan data user');
-      return;
-    }
-
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id);
-
-    const isAdmin = roles?.some(r => r.role === 'admin');
-
-    if (!isAdmin) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      toast.error('Akses ditolak! Akun ini bukan admin/owner.');
-      return;
-    }
-
-    setLoading(false);
-    toast.success('Login admin berhasil!');
-    navigate('/owner');
   };
 
   return (

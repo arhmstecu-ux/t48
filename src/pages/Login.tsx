@@ -18,13 +18,16 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Login berhasil!');
-      navigate('/');
+    try {
+      const result = await login(email, password);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Login berhasil!');
+        navigate('/');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,15 +35,19 @@ const Login = () => {
     e.preventDefault();
     if (!forgotEmail.trim()) return;
     setForgotLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setForgotLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Link reset sandi sudah dikirim ke email kamu!');
-      setShowForgot(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Link reset sandi sudah dikirim ke email kamu!');
+        setShowForgot(false);
+      }
+    } finally {
+      setForgotLoading(false);
     }
   };
 

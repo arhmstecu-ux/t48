@@ -93,6 +93,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const isAuthRoute = typeof window !== 'undefined' && ['/login', '/register', '/reset-password', '/admin-login'].includes(window.location.pathname);
+
   const fetchProfile = async (userId: string) => {
     try {
       const [{ data: profileData }, { data: roles }] = await Promise.all([
@@ -115,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
+      if (session?.user && !isAuthRoute) {
         fetchProfile(session.user.id).finally(() => mounted && setLoading(false));
       } else {
         setLoading(false);
@@ -129,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
+      if (session?.user && !isAuthRoute) {
         window.setTimeout(() => {
           if (!mounted) return;
           void fetchProfile(session.user!.id);
@@ -141,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => { mounted = false; clearTimeout(failSafe); subscription.unsubscribe(); };
-  }, []);
+  }, [isAuthRoute]);
 
   // Realtime profile updates
   useEffect(() => {

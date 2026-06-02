@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -56,11 +56,19 @@ const SecurityGuard = () => {
 
 const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   const { isOwner, loading: authLoading } = useAuth();
+  const location = useLocation();
   const [maintenance, setMaintenance] = useState(false);
   const [message, setMessage] = useState("Website sedang dalam pemeliharaan.");
   const [checking, setChecking] = useState(true);
 
+  const isAuthRoute = ["/login", "/register", "/reset-password", "/admin-login"].includes(location.pathname);
+
   useEffect(() => {
+    if (isAuthRoute) {
+      setChecking(false);
+      return;
+    }
+
     let cancelled = false;
     // Hard fail-safe: NEVER block UI more than 2s even if backend is down/CORS-blocked
     const failSafe = setTimeout(() => { if (!cancelled) setChecking(false); }, 2000);
@@ -96,8 +104,9 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
       clearTimeout(failSafe);
       if (ch) { try { supabase.removeChannel(ch); } catch {} }
     };
-  }, []);
+  }, [isAuthRoute]);
 
+  if (isAuthRoute) return <>{children}</>;
   if (checking || authLoading) return null;
   if (maintenance && !isOwner) {
     return (

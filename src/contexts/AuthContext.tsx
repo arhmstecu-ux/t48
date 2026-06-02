@@ -18,6 +18,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> => {
   return await new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => reject(new Error(message)), ms);
@@ -33,6 +36,54 @@ const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, message: str
       }
     );
   });
+};
+
+const isNetworkLikeError = (error: unknown) => {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return ["failed to fetch", "networkerror", "load failed", "network request failed", "backend tidak merespons"].some((part) =>
+    message.includes(part)
+  );
+};
+
+const getFriendlyAuthError = (error: unknown, fallback: string) => {
+  if (isNetworkLikeError(error)) {
+    return 'Backend sedang bermasalah, jadi login belum bisa diproses. Coba lagi beberapa saat.';
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const pingBackend = async () => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 3500);
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+      method: 'GET',
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error('Backend tidak merespons normal');
+    }
+  } catch (error) {
+    throw new Error(
+      error instanceof DOMException && error.name === 'AbortError'
+        ? 'Backend tidak merespons'
+        : error instanceof Error
+          ? error.message
+          : 'Backend tidak merespons'
+    );
+  } finally {
+    window.clearTimeout(timer);
+  }
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -106,23 +157,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
     try {
+      await pingBackend();
+
       const { error } = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
-        12000,
-        'Login terlalu lama. Coba lagi sebentar atau refresh halaman.'
+        8000,
+        'Login terlalu lama. Coba lagi beberapa saat.'
       );
 
       if (error) return { error: error.message };
       return {};
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Login gagal. Coba lagi.',
+        error: getFriendlyAuthError(error, 'Login gagal. Coba lagi.'),
       };
     }
   };
 
   const register = async (data: { email: string; password: string; username: string; phone: string }): Promise<{ error?: string }> => {
     try {
+      await pingBackend();
+
       const { error } = await withTimeout(
         supabase.auth.signUp({
           email: data.email,
@@ -132,15 +187,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             emailRedirectTo: window.location.origin,
           },
         }),
-        12000,
-        'Pendaftaran terlalu lama. Coba lagi sebentar.'
+        8000,
+        'Pendaftaran terlalu lama. Coba lagi beberapa saat.'
       );
 
       if (error) return { error: error.message };
       return {};
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Pendaftaran gagal. Coba lagi.',
+        error: getFriendlyAuthError(error, 'Pendaftaran gagal. Coba lagi.'),
       };
     }
   };

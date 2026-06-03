@@ -16,6 +16,23 @@ const MyPage = () => {
   const navigate = useNavigate();
   const [oshiOpen, setOshiOpen] = useState(false);
   const [oshiId, setOshiId] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
+
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const premiumPlan = (profile as any)?.premium_plan as string | null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
+
+  const formatRemaining = (ms: number) => {
+    if (ms <= 0) return '0';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${d}h ${h.toString().padStart(2,'0')}j ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}d`;
+  };
+
 
   const { data: purchases, loading } = useRealtimeTable<Tables<'purchases'>>(
     'purchases',

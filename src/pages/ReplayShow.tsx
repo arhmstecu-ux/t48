@@ -78,7 +78,7 @@ const ReplayShow = () => {
           <div className="space-y-6">
             {videos.map((video, i) => {
               const embedUrl = getYoutubeEmbedUrl(video.youtube_url);
-              const isOpen = unlocked[video.id] || !video.has_password;
+              const isOpen = isPremium || unlocked[video.id] || !video.has_password;
               return (
                 <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.05 }}
                   className="glass-card rounded-2xl overflow-hidden">

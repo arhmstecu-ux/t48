@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera, Heart, Trash2 } from 'lucide-react';
+import { Camera, Heart, Trash2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
@@ -16,6 +16,23 @@ const MyPage = () => {
   const navigate = useNavigate();
   const [oshiOpen, setOshiOpen] = useState(false);
   const [oshiId, setOshiId] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
+
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const premiumPlan = (profile as any)?.premium_plan as string | null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
+
+  const formatRemaining = (ms: number) => {
+    if (ms <= 0) return '0';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${d}h ${h.toString().padStart(2,'0')}j ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}d`;
+  };
+
 
   const { data: purchases, loading } = useRealtimeTable<Tables<'purchases'>>(
     'purchases',
@@ -114,7 +131,38 @@ const MyPage = () => {
             </div>
           </div>
 
+          {/* Premium card */}
+          {isPremium && premiumUntil && (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="rounded-2xl p-5 mb-6 bg-gradient-to-br from-primary/20 via-primary/10 to-amber-500/10 border-2 border-primary/40 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-primary flex items-center justify-center shadow-md">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-extrabold text-foreground flex items-center gap-2">
+                    Premium Aktif
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground uppercase font-bold">
+                      {premiumPlan === 'monthly' ? 'Bulanan' : 'Mingguan'}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Akses Live Berbayar & semua Replay</p>
+                </div>
+              </div>
+              <div className="bg-background/50 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Sisa Waktu</p>
+                <p className="text-xl font-mono font-extrabold text-primary tabular-nums">
+                  {formatRemaining(premiumUntil.getTime() - Date.now())}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Berakhir: {premiumUntil.toLocaleString('id-ID')}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Oshi card */}
+
           <div className="glass-card rounded-2xl p-5 mb-6 border-l-4 border-primary">
             <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
               <Heart className="w-5 h-5 text-primary fill-primary" /> Oshi-ku

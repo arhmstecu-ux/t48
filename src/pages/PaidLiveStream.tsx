@@ -86,9 +86,12 @@ const PaidLiveStream = () => {
   // Token-only mode (no login required)
   const isTokenMode = !!tokenParam && !user;
 
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
+
   useEffect(() => {
-    if (!user && !tokenParam) navigate("/login");
-  }, [user, tokenParam, navigate]);
+    if (!user) navigate("/login");
+  }, [user, navigate]);
 
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
 
@@ -96,24 +99,12 @@ const PaidLiveStream = () => {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const promises: any[] = [
+      const [{ data: sRaw }, { data: roles }, { data: mods }] = await Promise.all([
         supabase.rpc('get_paid_livestream_public' as any),
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
         supabase.from("livestream_moderators").select("profile_code"),
-      ];
-      if (user?.email) {
-        promises.push(supabase.from("paid_livestream_access").select("expires_at").ilike("email", user.email).maybeSingle());
-      } else {
-        promises.push(Promise.resolve({ data: null }));
-      }
-      if (tokenParam) {
-        promises.push(supabase.rpc('validate_paid_token' as any, { _token: tokenParam }));
-      } else {
-        promises.push(Promise.resolve({ data: null }));
-      }
-      const [{ data: sRaw }, { data: roles }, { data: mods }, { data: a }, { data: tokRaw }] = await Promise.all(promises);
+      ]);
       const s = Array.isArray(sRaw) ? sRaw[0] : sRaw;
-      const tok = Array.isArray(tokRaw) ? tokRaw[0] : tokRaw;
       if (!mounted) return;
       if (s) { setSettings(s as any); setServerChoice((s as any).active_server || "youtube"); }
       if (roles) setOwnerIds(new Set(roles.map((r: any) => r.user_id)));
@@ -123,22 +114,14 @@ const PaidLiveStream = () => {
         if (ps) setModIds(new Set(ps.map((p: any) => p.user_id)));
       }
 
-      // Resolve access: owner > token > email
+      // Resolve access: owner > premium membership
       if (isOwner) {
         setHasAccess(true); setAccessMode("owner");
-      } else if (tok && (tok as any).valid) {
-        const t: any = tok;
-        setHasAccess(true); setAccessMode("token"); setTokenCode(t.token); setAccessExpiry(t.expires_at);
-      } else if (tok && (tok as any).banned) {
-        setAccessError("Token Anda telah diblokir oleh admin."); setHasAccess(false);
-      } else if (tok && !((tok as any).valid)) {
-        setAccessError("Token sudah kedaluwarsa."); setHasAccess(false);
-      } else if (a && new Date((a as any).expires_at).getTime() > Date.now()) {
-        setHasAccess(true); setAccessMode("email"); setAccessExpiry((a as any).expires_at);
-      } else if (tokenParam) {
-        setAccessError(`Token "${tokenParam}" tidak ditemukan. Mungkin sudah dihapus admin atau salah ketik. Pastikan link disalin lengkap.`); setHasAccess(false);
+      } else if (isPremium) {
+        setHasAccess(true); setAccessMode("email"); setAccessExpiry((profile as any).premium_until);
       } else {
         setHasAccess(false);
+        setAccessError("Anda belum punya membership premium. Hubungi admin untuk membeli.");
       }
       setLoading(false);
     };
@@ -146,18 +129,10 @@ const PaidLiveStream = () => {
     const ch = supabase.channel("paid-stream-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" },
         (p: any) => { if (p.new) setSettings(p.new as any); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_tokens" },
-        (p: any) => {
-          if (!tokenParam) return;
-          const n: any = p.new;
-          if (n && n.token === tokenParam) {
-            if (n.banned) { setHasAccess(false); setAccessError("Token Anda telah diblokir oleh admin."); }
-            else if (new Date(n.expires_at).getTime() <= Date.now()) { setHasAccess(false); setAccessError("Token kedaluwarsa."); }
-          }
-        })
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
-  }, [user?.email, isOwner, tokenParam]);
+  }, [user?.id, isOwner, isPremium, (profile as any)?.premium_until]);
+
 
   // Chat realtime (only for logged-in users)
   useEffect(() => {

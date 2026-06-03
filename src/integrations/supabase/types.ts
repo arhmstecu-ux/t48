@@ -448,6 +448,8 @@ export type Database = {
           is_blacklisted: boolean
           oshi_member_id: number | null
           phone: string | null
+          premium_plan: string | null
+          premium_until: string | null
           profile_code: string | null
           profile_photo: string | null
           updated_at: string
@@ -461,6 +463,8 @@ export type Database = {
           is_blacklisted?: boolean
           oshi_member_id?: number | null
           phone?: string | null
+          premium_plan?: string | null
+          premium_until?: string | null
           profile_code?: string | null
           profile_photo?: string | null
           updated_at?: string
@@ -474,6 +478,8 @@ export type Database = {
           is_blacklisted?: boolean
           oshi_member_id?: number | null
           phone?: string | null
+          premium_plan?: string | null
+          premium_until?: string | null
           profile_code?: string | null
           profile_photo?: string | null
           updated_at?: string
@@ -754,12 +760,26 @@ export type Database = {
           username: string
         }[]
       }
+      grant_premium_by_code: {
+        Args: { _code: string; _plan: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      list_premium_users: {
+        Args: never
+        Returns: {
+          premium_plan: string
+          premium_until: string
+          profile_code: string
+          user_id: string
+          username: string
+        }[]
       }
       list_public_profiles: {
         Args: never
@@ -780,6 +800,7 @@ export type Database = {
           youtube_url: string
         }[]
       }
+      revoke_premium_by_code: { Args: { _code: string }; Returns: Json }
       validate_paid_token: {
         Args: { _token: string }
         Returns: {

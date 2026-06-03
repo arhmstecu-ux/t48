@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun, Download, Headphones } from 'lucide-react';
+import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun, Download, Headphones, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 const ThreeDotMenu = () => {
   const [open, setOpen] = useState(false);
-  const { isOwner, user } = useAuth();
+  const { isOwner, user, profile } = useAuth();
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
   const menuRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -31,9 +34,14 @@ const ThreeDotMenu = () => {
     { label: 'Butuh Bantuan? Chat Admin', icon: MessageCircle, href: 'https://wa.me/6282135963767?text=Halo%20admin,%20saya%20butuh%20bantuan', external: true },
   ];
 
+  if (isPremium || isOwner) {
+    menuItems.splice(5, 0, { label: '👑 Live Berbayar (Premium)', icon: Crown, href: '/live-paid' });
+  }
+
   if (isOwner) {
     menuItems.push({ label: '⚙️ Panel Owner', icon: ShoppingBag, href: '/owner' });
   }
+
 
   return (
     <div className="relative" ref={menuRef}>

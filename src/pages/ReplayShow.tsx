@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Play, Lock, Eye, EyeOff } from 'lucide-react';
+import { Play, Lock, Eye, EyeOff, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
 
 interface ReplayVideo {
   id: string;
@@ -18,12 +20,16 @@ const getYoutubeEmbedUrl = (url: string): string => {
 };
 
 const ReplayShow = () => {
+  const { profile } = useAuth();
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
   const [videos, setVideos] = useState<ReplayVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
   const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
 
   useEffect(() => {
     let mounted = true;
@@ -59,7 +65,13 @@ const ReplayShow = () => {
             <Play className="inline w-8 h-8 mr-2" />Replay Show
           </h1>
           <p className="text-muted-foreground">Tonton ulang pertunjukan JKT48 favoritmu</p>
+          {isPremium && (
+            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold">
+              <Crown className="w-4 h-4" /> Premium aktif · semua video terbuka
+            </div>
+          )}
         </div>
+
 
         {loading ? (
           <div className="text-center py-20"><p className="text-muted-foreground">Memuat video...</p></div>
@@ -72,7 +84,7 @@ const ReplayShow = () => {
           <div className="space-y-6">
             {videos.map((video, i) => {
               const embedUrl = getYoutubeEmbedUrl(video.youtube_url);
-              const isOpen = unlocked[video.id] || !video.has_password;
+              const isOpen = isPremium || unlocked[video.id] || !video.has_password;
               return (
                 <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.05 }}
                   className="glass-card rounded-2xl overflow-hidden">

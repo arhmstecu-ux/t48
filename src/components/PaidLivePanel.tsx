@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Plus, Upload, X, Copy, Ban, CheckCircle2 } from "lucide-react";
-import { useRef } from "react";
+import { Trash2, Upload, X, Crown, Plus } from "lucide-react";
 import PaidLineupManager from "./PaidLineupManager";
 
 interface Settings {
@@ -21,47 +20,28 @@ interface Settings {
   is_live: boolean;
 }
 
-interface Access {
-  id: string;
-  email: string;
-  expires_at: string;
-  note: string | null;
+interface PremiumUser {
+  user_id: string;
+  username: string;
+  profile_code: string;
+  premium_plan: string;
+  premium_until: string;
 }
-
-interface TokenRow {
-  id: string;
-  token: string;
-  label: string | null;
-  expires_at: string;
-  banned: boolean;
-}
-
-const randToken = () => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-};
-
-const TEMPLATE_KEYS = ["paid_show_name", "paid_access_time", "paid_replay_date", "paid_replay_password"] as const;
-type TemplateKey = typeof TEMPLATE_KEYS[number];
 
 const PaidLivePanel = () => {
   const [s, setS] = useState<Settings | null>(null);
-  const [list, setList] = useState<Access[]>([]);
-  const [tokens, setTokens] = useState<TokenRow[]>([]);
-  const [tpl, setTpl] = useState<Record<TemplateKey, string>>({
-    paid_show_name: "", paid_access_time: "", paid_replay_date: "", paid_replay_password: "",
-  });
-  const [newEmail, setNewEmail] = useState("");
-  const [newDays, setNewDays] = useState(7);
-  const [newTokenLabel, setNewTokenLabel] = useState("");
-  const [newTokenDays, setNewTokenDays] = useState(7);
+  const [premiumUsers, setPremiumUsers] = useState<PremiumUser[]>([]);
+  const [code, setCode] = useState("");
+  const [plan, setPlan] = useState<"weekly" | "monthly">("weekly");
+  const [granting, setGranting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
+  const [, setTick] = useState(0);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
 
   const uploadImage = async (file: File, kind: "logo" | "bg") => {
     if (file.size > 5 * 1024 * 1024) { toast.error("Maks 5MB"); return null; }
@@ -92,132 +72,46 @@ const PaidLivePanel = () => {
     e.target.value = "";
   };
 
+  const loadPremium = async () => {
+    const { data } = await supabase.rpc('list_premium_users' as any);
+    if (data) setPremiumUsers(data as any);
+  };
+
   const load = async () => {
-    const [{ data: settings }, { data: access }, { data: toks }, { data: appS }] = await Promise.all([
-      supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle(),
-      supabase.from("paid_livestream_access").select("*").order("expires_at", { ascending: false }),
-      supabase.from("paid_livestream_tokens").select("*").order("created_at", { ascending: false }),
-      supabase.from("app_settings").select("key,value").in("key", TEMPLATE_KEYS as any),
-    ]);
+    const { data: settings } = await supabase.from("paid_livestream_settings").select("*").limit(1).maybeSingle();
     if (settings) setS(settings as any);
-    if (access) setList(access as any);
-    if (toks) setTokens(toks as any);
-    if (appS) {
-      setTpl(prev => {
-        const next = { ...prev };
-        appS.forEach((r: any) => { if (TEMPLATE_KEYS.includes(r.key)) next[r.key as TemplateKey] = r.value || ""; });
-        return next;
-      });
-    }
+    await loadPremium();
   };
-
-  const saveTemplate = async () => {
-    const rows = TEMPLATE_KEYS.map(k => ({ key: k, value: tpl[k] || "", updated_at: new Date().toISOString() }));
-    const { error } = await supabase.from("app_settings").upsert(rows, { onConflict: "key" });
-    if (error) toast.error(error.message); else toast.success("Template tersimpan");
-  };
-
-  const buildMessage = (token: string) => {
-    const link = `${window.location.origin}/live-paid?t=${token}`;
-    return `*🚨Terimakasih telah membeli livestreaming dari kita.*
-
-> selamat menonton show ${tpl.paid_show_name || "(belum diatur)"}
-
-> ⏳akses jam: ${tpl.paid_access_time || "(belum diatur)"}
-
-📢 *AKSES LIVE STREAMING pada LINK UTAMA,LINK CADANGAN Dan REPLAY* :
-
-* 1️⃣ *Link Utama*: 🔗 ${link}
-
-                
-
-* 2⃣ *Link Cadangan* : 🔗 https://team-hub48.lovable.app/streams
-
-🔗Replay ${tpl.paid_replay_date || "(tanggal show)"} 2026 :
-
-1. t48.lovable.app/replay
-
-🗝️ Sandi : ${tpl.paid_replay_password || "(belum diatur)"}
-
-⚠️ *PENTING UNTUK DIPERHATIKAN*:
-
-1 Akun = 1 Device/browser : Jangan login di dua perangkat bersamaan.
-
-Waktu Akses: Disarankan masuk website saat live sudah dimulai (Cek info terbaru di saluran).
-
-Browser: Gunakan Chrome atau Opera untuk pengalaman terbaik.
-
-Kendala Akses: Jika tombol masuk tidak berfungsi, mohon matikan AdBlock/DNS AdGuard.
-
-Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
-  };
-
-  const copyTokenMessage = (token: string) => {
-    navigator.clipboard?.writeText(buildMessage(token));
-    toast.success("Pesan + link disalin");
-  };
-
 
   useEffect(() => {
     load();
     const ch = supabase.channel("owner-paidlive-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_access" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_tokens" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => loadPremium())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const createToken = async () => {
-    const days = Math.max(1, newTokenDays);
-    const expires = new Date(Date.now() + days * 86400000).toISOString();
-    let token = randToken();
-    // retry on collision (very rare)
-    for (let i = 0; i < 5; i++) {
-      const { data: exist } = await supabase.from("paid_livestream_tokens").select("id").eq("token", token).maybeSingle();
-      if (!exist) break;
-      token = randToken();
+  const grantPremium = async () => {
+    const c = code.trim().replace('#', '').toUpperCase();
+    if (c.length < 3) { toast.error("Masukkan ID pembeli (mis: #A3F9)"); return; }
+    setGranting(true);
+    const { data, error } = await supabase.rpc('grant_premium_by_code' as any, { _code: c, _plan: plan });
+    setGranting(false);
+    const res: any = data;
+    if (error || !res?.success) {
+      toast.error(res?.error || error?.message || "Gagal");
+      return;
     }
-    const tempId = `tmp-${Date.now()}`;
-    setTokens(prev => [{ id: tempId, token, label: newTokenLabel || null, expires_at: expires, banned: false }, ...prev]);
-    setNewTokenLabel("");
-    const { error } = await supabase.from("paid_livestream_tokens").insert({
-      token, label: newTokenLabel || null, expires_at: expires,
-    });
-    if (error) {
-      setTokens(prev => prev.filter(t => t.id !== tempId));
-      toast.error(error.message);
-    } else {
-      const msg = buildMessage(token);
-      navigator.clipboard?.writeText(msg).catch(() => {});
-      toast.success(`Token ${token} dibuat & pesan disalin`);
-    }
+    toast.success(`✅ ${res.username} → Premium ${plan === 'weekly' ? 'Mingguan' : 'Bulanan'}`);
+    setCode("");
+    loadPremium();
   };
 
-  const copyTokenLink = (token: string) => {
-    navigator.clipboard?.writeText(buildMessage(token));
-    toast.success("Pesan + link disalin");
-  };
-
-  const toggleBan = async (t: TokenRow) => {
-    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, banned: !t.banned } : x));
-    const { error } = await supabase.from("paid_livestream_tokens").update({ banned: !t.banned }).eq("id", t.id);
-    if (error) { toast.error(error.message); load(); }
-    else toast.success(!t.banned ? "Token diblokir" : "Token diaktifkan");
-  };
-
-  const removeToken = async (id: string) => {
-    setTokens(prev => prev.filter(t => t.id !== id));
-    await supabase.from("paid_livestream_tokens").delete().eq("id", id);
-    toast.success("Token dihapus");
-  };
-
-  const extendToken = async (t: TokenRow, days: number) => {
-    const base = Math.max(Date.now(), new Date(t.expires_at).getTime());
-    const next = new Date(base + days * 86400000).toISOString();
-    setTokens(prev => prev.map(x => x.id === t.id ? { ...x, expires_at: next } : x));
-    await supabase.from("paid_livestream_tokens").update({ expires_at: next }).eq("id", t.id);
-    toast.success(`+${days} hari`);
+  const revokePremium = async (c: string) => {
+    const { error } = await supabase.rpc('revoke_premium_by_code' as any, { _code: c });
+    if (error) toast.error(error.message);
+    else { toast.success("Premium dicabut"); loadPremium(); }
   };
 
   const saveSettings = async () => {
@@ -242,42 +136,15 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
     else toast.success("Tersimpan");
   };
 
-  const addAccess = async () => {
-    const email = newEmail.trim().toLowerCase();
-    if (!email || !email.includes("@")) {
-      toast.error("Email tidak valid");
-      return;
-    }
-    const days = Math.max(1, newDays);
-    const expires = new Date(Date.now() + days * 86400000);
-    // Optimistic UI update so user doesn't feel any delay
-    const tempId = `tmp-${Date.now()}`;
-    setList(prev => {
-      const without = prev.filter(a => a.email.toLowerCase() !== email);
-      return [{ id: tempId, email, expires_at: expires.toISOString(), note: `${days} hari` }, ...without];
-    });
-    setNewEmail("");
-    const { error } = await supabase.from("paid_livestream_access").upsert({
-      email, expires_at: expires.toISOString(), note: `${days} hari`,
-    }, { onConflict: "email" });
-    if (error) {
-      setList(prev => prev.filter(a => a.id !== tempId));
-      toast.error(error.message);
-    } else {
-      toast.success(`${email} → ${days} hari`);
-    }
-  };
-
-  const removeAccess = async (id: string) => {
-    await supabase.from("paid_livestream_access").delete().eq("id", id);
-    toast.success("Akses dicabut");
-  };
-
-  const extendAccess = async (a: Access, days: number) => {
-    const base = Math.max(Date.now(), new Date(a.expires_at).getTime());
-    const next = new Date(base + days * 86400000);
-    await supabase.from("paid_livestream_access").update({ expires_at: next.toISOString() }).eq("id", a.id);
-    toast.success(`+${days} hari`);
+  const formatRemaining = (until: string) => {
+    const ms = new Date(until).getTime() - Date.now();
+    if (ms <= 0) return "Habis";
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (d > 0) return `${d}h ${h}j`;
+    if (h > 0) return `${h}j ${m}m`;
+    return `${m}m`;
   };
 
   if (!s) return <div className="text-sm text-muted-foreground">Memuat...</div>;
@@ -288,6 +155,64 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
 
   return (
     <div className="space-y-4">
+      {/* Premium Membership */}
+      <Card className="p-4 space-y-3 border-primary/30">
+        <div className="flex items-center gap-2">
+          <Crown className="w-5 h-5 text-primary" />
+          <h3 className="font-bold">Membership Premium</h3>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Tambahkan ID pembeli (kode 4-digit, contoh: <span className="font-mono font-bold text-primary">#A3F9</span>) dan pilih durasi. Akun otomatis jadi premium.
+        </p>
+
+        <div className="flex gap-2">
+          <Input
+            placeholder="#A3F9"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            className="flex-1 font-mono uppercase"
+            maxLength={5}
+            onKeyDown={e => e.key === 'Enter' && grantPremium()}
+          />
+          <select
+            value={plan}
+            onChange={e => setPlan(e.target.value as any)}
+            className="px-3 rounded-md border border-input bg-background text-sm"
+          >
+            <option value="weekly">Mingguan (7 hari)</option>
+            <option value="monthly">Bulanan (30 hari)</option>
+          </select>
+          <Button onClick={grantPremium} disabled={granting} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> {granting ? "..." : "Add"}
+          </Button>
+        </div>
+
+        <div className="space-y-1.5 max-h-80 overflow-y-auto pt-2 border-t border-border">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">Akun Premium Aktif ({premiumUsers.length})</div>
+          {premiumUsers.map(u => (
+            <div key={u.user_id} className="flex items-center gap-2 p-2 rounded border border-primary/20 bg-primary/5">
+              <Crown className="w-4 h-4 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold truncate">{u.username}</span>
+                  <span className="text-[10px] font-mono text-primary">#{u.profile_code}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold uppercase">{u.premium_plan}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Sisa: <span className="font-bold text-foreground">{formatRemaining(u.premium_until)}</span> · sampai {new Date(u.premium_until).toLocaleString("id-ID")}
+                </div>
+              </div>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => revokePremium(u.profile_code)}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+          {premiumUsers.length === 0 && (
+            <div className="text-xs text-muted-foreground text-center py-4">Belum ada akun premium</div>
+          )}
+        </div>
+      </Card>
+
       {/* Settings */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">⚙️ Pengaturan Siaran</h3>
@@ -303,7 +228,7 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
         </div>
 
         <div>
-          <label className="text-xs font-medium">URL YouTube (server YouTube)</label>
+          <label className="text-xs font-medium">URL YouTube</label>
           <Input value={s.youtube_url} onChange={e => setS({ ...s, youtube_url: e.target.value })}
             placeholder="https://www.youtube.com/watch?v=..." />
         </div>
@@ -312,7 +237,6 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
           <label className="text-xs font-medium">URL M3U8 (server IDN)</label>
           <Input value={s.m3u8_url} onChange={e => setS({ ...s, m3u8_url: e.target.value })}
             placeholder="https://...m3u8" />
-          <p className="text-[10px] text-muted-foreground mt-1">Dimainkan langsung tanpa proxy untuk performa optimal (tanpa buffering ulang).</p>
         </div>
 
         <div>
@@ -340,12 +264,12 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
                 </div>
               )}
               <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
-                <Upload className="w-3 h-3 mr-1" /> {uploadingLogo ? "Upload..." : "Pilih"}
+                <Upload className="w-3 h-3 mr-1" /> {uploadingLogo ? "..." : "Pilih"}
               </Button>
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium">Background countdown</label>
+            <label className="text-xs font-medium">Background</label>
             <input ref={bgInputRef} type="file" accept="image/*" onChange={handleBgFile} className="hidden" />
             <div className="mt-1 flex items-center gap-2">
               {s.background_url && (
@@ -358,14 +282,14 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
                 </div>
               )}
               <Button size="sm" variant="outline" onClick={() => bgInputRef.current?.click()} disabled={uploadingBg}>
-                <Upload className="w-3 h-3 mr-1" /> {uploadingBg ? "Upload..." : "Pilih"}
+                <Upload className="w-3 h-3 mr-1" /> {uploadingBg ? "..." : "Pilih"}
               </Button>
             </div>
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium">Waktu Mulai (untuk countdown)</label>
+          <label className="text-xs font-medium">Waktu Mulai (countdown)</label>
           <Input type="datetime-local" value={startTimeLocal}
             onChange={e => setS({ ...s, start_time: e.target.value ? new Date(e.target.value).toISOString() : null })} />
         </div>
@@ -381,114 +305,6 @@ Jika ada kendala, segera hubungi Admin. Selamat menonton! 🥰`;
       </Card>
 
       <PaidLineupManager />
-
-      {/* Template pesan WA */}
-      <Card className="p-4 space-y-3">
-        <h3 className="font-bold">📝 Template Pesan Token</h3>
-        <p className="text-[10px] text-muted-foreground">Diisi untuk pesan otomatis saat menyalin link token.</p>
-        <div>
-          <label className="text-xs font-medium">Nama Show</label>
-          <Input value={tpl.paid_show_name} onChange={e => setTpl({ ...tpl, paid_show_name: e.target.value })} placeholder="mis: Aitakatta" />
-        </div>
-        <div>
-          <label className="text-xs font-medium">Jam Akses</label>
-          <Input value={tpl.paid_access_time} onChange={e => setTpl({ ...tpl, paid_access_time: e.target.value })} placeholder="mis: 19.00 WIB" />
-        </div>
-        <div>
-          <label className="text-xs font-medium">Tanggal Replay</label>
-          <Input value={tpl.paid_replay_date} onChange={e => setTpl({ ...tpl, paid_replay_date: e.target.value })} placeholder="mis: 7 Mei" />
-        </div>
-        <div>
-          <label className="text-xs font-medium">Sandi Replay</label>
-          <Input value={tpl.paid_replay_password} onChange={e => setTpl({ ...tpl, paid_replay_password: e.target.value })} placeholder="mis: jkt48" />
-        </div>
-        <Button onClick={saveTemplate} className="w-full" size="sm">💾 Simpan Template</Button>
-      </Card>
-
-
-      {/* Token Access (link-based) */}
-      <Card className="p-4 space-y-3">
-        <h3 className="font-bold">🎟️ Token Akses Link ({tokens.length})</h3>
-        <p className="text-[10px] text-muted-foreground">1 link = 1 orang. Watermark di player akan menampilkan kode token.</p>
-
-        <div className="flex gap-2">
-          <Input placeholder="Label (opsional, mis: Andi)" value={newTokenLabel}
-            onChange={e => setNewTokenLabel(e.target.value)} className="flex-1" />
-          <Input type="number" min={1} value={newTokenDays}
-            onChange={e => setNewTokenDays(parseInt(e.target.value || "1"))} className="w-20" />
-          <Button onClick={createToken} size="sm"><Plus className="h-4 w-4" /></Button>
-        </div>
-
-        <div className="space-y-1.5 max-h-80 overflow-y-auto">
-          {tokens.map(t => {
-            const expired = new Date(t.expires_at).getTime() < Date.now();
-            return (
-              <div key={t.id} className={`flex items-center gap-1.5 p-2 rounded border ${
-                t.banned ? "bg-destructive/10 border-destructive/30" : expired ? "opacity-50 bg-muted/30" : "bg-card"
-              }`}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-sm tracking-wider">{t.token}</span>
-                    {t.label && <span className="text-[10px] text-muted-foreground truncate">{t.label}</span>}
-                    {t.banned && <span className="text-[9px] font-bold text-destructive">BANNED</span>}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {expired ? "❌ Kedaluwarsa" : "✅ Sampai"} {new Date(t.expires_at).toLocaleString("id-ID")}
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => copyTokenLink(t.token)} title="Salin link">
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => extendToken(t, 7)}>+7h</Button>
-                <Button size="sm" variant={t.banned ? "outline" : "ghost"} className="h-7 w-7 p-0"
-                  onClick={() => toggleBan(t)} title={t.banned ? "Aktifkan" : "Blokir"}>
-                  {t.banned ? <CheckCircle2 className="h-3 w-3 text-chart-4" /> : <Ban className="h-3 w-3 text-destructive" />}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeToken(t.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            );
-          })}
-          {tokens.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">Belum ada token</div>}
-        </div>
-      </Card>
-
-      {/* Email Access */}
-      <Card className="p-4 space-y-3">
-        <h3 className="font-bold">📧 Akses Email ({list.length})</h3>
-
-        <div className="flex gap-2">
-          <Input placeholder="email@gmail.com" value={newEmail}
-            onChange={e => setNewEmail(e.target.value)} className="flex-1" />
-          <Input type="number" min={1} value={newDays}
-            onChange={e => setNewDays(parseInt(e.target.value || "1"))} className="w-20" />
-          <Button onClick={addAccess} size="sm"><Plus className="h-4 w-4" /></Button>
-        </div>
-        <p className="text-[10px] text-muted-foreground">Email + jumlah hari akses</p>
-
-        <div className="space-y-1.5 max-h-80 overflow-y-auto">
-          {list.map(a => {
-            const expired = new Date(a.expires_at).getTime() < Date.now();
-            return (
-              <div key={a.id} className={`flex items-center gap-2 p-2 rounded border ${expired ? "opacity-50 bg-destructive/5" : "bg-card"}`}>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{a.email}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {expired ? "❌ Kedaluwarsa" : "✅ Sampai"} {new Date(a.expires_at).toLocaleString("id-ID")}
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => extendAccess(a, 7)}>+7h</Button>
-                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => extendAccess(a, 30)}>+30h</Button>
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeAccess(a.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            );
-          })}
-          {list.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">Belum ada akses</div>}
-        </div>
-      </Card>
     </div>
   );
 };

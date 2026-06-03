@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera, Heart, Trash2 } from 'lucide-react';
+import { Camera, Heart, Trash2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';

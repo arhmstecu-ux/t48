@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { getUpcomingBirthdays } from '@/data/members';
 import { getActivePunishments } from '@/data/punishments';
 import PunishmentCountdown from '@/components/PunishmentCountdown';
-import AIChatWidget from '@/components/AIChatWidget';
+
 
 const Index = () => {
   const { user } = useAuth();

@@ -34,9 +34,14 @@ const ThreeDotMenu = () => {
     { label: 'Butuh Bantuan? Chat Admin', icon: MessageCircle, href: 'https://wa.me/6282135963767?text=Halo%20admin,%20saya%20butuh%20bantuan', external: true },
   ];
 
+  if (isPremium || isOwner) {
+    menuItems.splice(5, 0, { label: '👑 Live Berbayar (Premium)', icon: Crown, href: '/live-paid' });
+  }
+
   if (isOwner) {
     menuItems.push({ label: '⚙️ Panel Owner', icon: ShoppingBag, href: '/owner' });
   }
+
 
   return (
     <div className="relative" ref={menuRef}>

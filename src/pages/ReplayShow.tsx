@@ -65,7 +65,13 @@ const ReplayShow = () => {
             <Play className="inline w-8 h-8 mr-2" />Replay Show
           </h1>
           <p className="text-muted-foreground">Tonton ulang pertunjukan JKT48 favoritmu</p>
+          {isPremium && (
+            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-bold">
+              <Crown className="w-4 h-4" /> Premium aktif · semua video terbuka
+            </div>
+          )}
         </div>
+
 
         {loading ? (
           <div className="text-center py-20"><p className="text-muted-foreground">Memuat video...</p></div>

@@ -20,12 +20,16 @@ const getYoutubeEmbedUrl = (url: string): string => {
 };
 
 const ReplayShow = () => {
+  const { profile } = useAuth();
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
   const [videos, setVideos] = useState<ReplayVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
   const [passwordInputs, setPasswordInputs] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
 
   useEffect(() => {
     let mounted = true;

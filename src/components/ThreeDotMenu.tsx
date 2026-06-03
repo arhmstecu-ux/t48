@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun, Download, Headphones } from 'lucide-react';
+import { MoreVertical, ShoppingBag, MessageCircle, Instagram, Music2, Radio, Users, Ticket, Play, Megaphone, Trophy, CloudSun, Download, Headphones, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 const ThreeDotMenu = () => {
   const [open, setOpen] = useState(false);
-  const { isOwner, user } = useAuth();
+  const { isOwner, user, profile } = useAuth();
+  const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
+  const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
   const menuRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

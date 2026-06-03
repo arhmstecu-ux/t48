@@ -131,7 +131,38 @@ const MyPage = () => {
             </div>
           </div>
 
+          {/* Premium card */}
+          {isPremium && premiumUntil && (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="rounded-2xl p-5 mb-6 bg-gradient-to-br from-primary/20 via-primary/10 to-amber-500/10 border-2 border-primary/40 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-primary flex items-center justify-center shadow-md">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-extrabold text-foreground flex items-center gap-2">
+                    Premium Aktif
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground uppercase font-bold">
+                      {premiumPlan === 'monthly' ? 'Bulanan' : 'Mingguan'}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Akses Live Berbayar & semua Replay</p>
+                </div>
+              </div>
+              <div className="bg-background/50 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Sisa Waktu</p>
+                <p className="text-xl font-mono font-extrabold text-primary tabular-nums">
+                  {formatRemaining(premiumUntil.getTime() - Date.now())}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Berakhir: {premiumUntil.toLocaleString('id-ID')}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Oshi card */}
+
           <div className="glass-card rounded-2xl p-5 mb-6 border-l-4 border-primary">
             <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
               <Heart className="w-5 h-5 text-primary fill-primary" /> Oshi-ku

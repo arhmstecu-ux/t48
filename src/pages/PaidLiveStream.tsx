@@ -250,6 +250,9 @@ const PaidLiveStream = () => {
               fragLoadingMaxRetry: 6,
               manifestLoadingMaxRetry: 4,
               levelLoadingMaxRetry: 4,
+              xhrSetup: (xhr: XMLHttpRequest) => {
+                if (idnToken) xhr.setRequestHeader("x-api-token", idnToken);
+              },
             });
             hlsRef.current = hls;
             hls.loadSource(url); hls.attachMedia(video);

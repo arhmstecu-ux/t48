@@ -20,6 +20,7 @@ interface Settings {
   background_url: string;
   start_time: string | null;
   is_live: boolean;
+  public_access?: boolean;
 }
 
 interface ChatMessage {
@@ -115,21 +116,37 @@ const PaidLiveStream = () => {
         if (ps) setModIds(new Set(ps.map((p: any) => p.user_id)));
       }
 
-      // Resolve access: owner > premium membership
+      // Resolve access: owner > public_access > premium membership
       if (isOwner) {
-        setHasAccess(true); setAccessMode("owner");
+        setHasAccess(true); setAccessMode("owner"); setAccessError("");
+      } else if ((s as any)?.public_access) {
+        setHasAccess(true); setAccessMode("email"); setAccessExpiry(null); setAccessError("");
       } else if (isPremium) {
-        setHasAccess(true); setAccessMode("email"); setAccessExpiry((profile as any).premium_until);
+        setHasAccess(true); setAccessMode("email"); setAccessExpiry((profile as any).premium_until); setAccessError("");
       } else {
         setHasAccess(false);
-        setAccessError("Anda belum punya membership premium. Hubungi admin untuk membeli.");
+        setAccessError("Anda belum punya membership premium. Hubungi admin untuk membeli, atau tunggu admin membuka akses publik.");
       }
       setLoading(false);
     };
     load();
     const ch = supabase.channel("paid-stream-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" },
-        (p: any) => { if (p.new) setSettings(p.new as any); })
+        (p: any) => {
+          if (!p.new) return;
+          setSettings(p.new as any);
+          // Re-evaluate access live when admin toggles public_access
+          if (!isOwner) {
+            if (p.new.public_access) {
+              setHasAccess(true); setAccessMode("email"); setAccessExpiry(null); setAccessError("");
+            } else if (isPremium) {
+              setHasAccess(true); setAccessMode("email"); setAccessExpiry((profile as any)?.premium_until || null); setAccessError("");
+            } else {
+              setHasAccess(false);
+              setAccessError("Admin menutup akses publik. Hanya akun Premium yang bisa nonton.");
+            }
+          }
+        })
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [user?.id, isOwner, isPremium, (profile as any)?.premium_until]);

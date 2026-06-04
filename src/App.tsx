@@ -20,8 +20,6 @@ const ReplayShow = lazy(() => import("./pages/ReplayShow"));
 const Announcements = lazy(() => import("./pages/Announcements"));
 const Ranking = lazy(() => import("./pages/Ranking"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-const GroupChat = lazy(() => import("./pages/GroupChat"));
-const LiveStream = lazy(() => import("./pages/LiveStream"));
 const PaidLiveStream = lazy(() => import("./pages/PaidLiveStream"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -157,8 +155,6 @@ const App = () => (
                 <Route path="/announcements" element={<Announcements />} />
                 <Route path="/ranking" element={<Ranking />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
-                <Route path="/group-chat" element={<GroupChat />} />
-                <Route path="/live" element={<LiveStream />} />
                 <Route path="/live-paid" element={<PaidLiveStream />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/admin-panel" element={<AdminPanelPage />} />

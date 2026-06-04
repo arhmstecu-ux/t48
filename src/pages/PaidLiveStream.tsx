@@ -297,7 +297,7 @@ const PaidLiveStream = () => {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [hasAccess, isPreShow, serverChoice, m3u8Url]);
+  }, [hasAccess, isPreShow, serverChoice, m3u8Url, idnToken]);
 
   const setLevel = (lv: number) => {
     if (!hlsRef.current) return;

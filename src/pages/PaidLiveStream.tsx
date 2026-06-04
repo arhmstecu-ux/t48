@@ -550,6 +550,12 @@ const PaidLiveStream = () => {
               }`}>
               <Server className="w-3.5 h-3.5" /> Server IDN
             </button>
+            <button onClick={() => setServerChoice("rtmp")}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                serverChoice === "rtmp" ? "gradient-primary text-primary-foreground shadow-lg" : "glass-card text-muted-foreground"
+              }`}>
+              <Server className="w-3.5 h-3.5" /> Server RTMP
+            </button>
           </div>
         )}
 

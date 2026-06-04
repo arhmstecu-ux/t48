@@ -19,6 +19,7 @@ interface Settings {
   background_url: string;
   start_time: string | null;
   is_live: boolean;
+  public_access: boolean;
 }
 
 interface PremiumUser {

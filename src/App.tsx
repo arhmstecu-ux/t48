@@ -155,8 +155,6 @@ const App = () => (
                 <Route path="/announcements" element={<Announcements />} />
                 <Route path="/ranking" element={<Ranking />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
-                <Route path="/group-chat" element={<GroupChat />} />
-                <Route path="/live" element={<LiveStream />} />
                 <Route path="/live-paid" element={<PaidLiveStream />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/admin-panel" element={<AdminPanelPage />} />

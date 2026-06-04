@@ -123,6 +123,7 @@ const PaidLivePanel = () => {
         active_server: s.active_server,
         youtube_url: s.youtube_url,
         m3u8_url: s.m3u8_url,
+        rtmp_url: s.rtmp_url,
         title: s.title,
         description: s.description,
         logo_url: s.logo_url,

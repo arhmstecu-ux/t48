@@ -217,9 +217,42 @@ const PaidLivePanel = () => {
         </div>
       </Card>
 
+      {/* Public Access Toggle - instant save */}
+      <Card className={`p-4 border-2 ${s.public_access ? 'border-success bg-success/5' : 'border-border'}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{s.public_access ? '🌐' : '🔒'}</span>
+              <h3 className="font-bold text-sm">Akses Publik Livestream</h3>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {s.public_access
+                ? 'AKTIF — semua user login bisa nonton tanpa premium.'
+                : 'NONAKTIF — hanya akun Premium yang bisa nonton.'}
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              const next = !s.public_access;
+              setS({ ...s, public_access: next });
+              const { error } = await supabase.from("paid_livestream_settings")
+                .update({ public_access: next, updated_at: new Date().toISOString() })
+                .eq("id", s.id!);
+              if (error) { setS({ ...s, public_access: !next }); toast.error(error.message); }
+              else toast.success(next ? "🌐 Akses publik diaktifkan" : "🔒 Akses publik dimatikan");
+            }}
+            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${s.public_access ? 'bg-success' : 'bg-input'}`}
+            aria-pressed={s.public_access}
+          >
+            <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-background shadow-lg ring-0 transition-transform ${s.public_access ? 'translate-x-7' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </Card>
+
       {/* Settings */}
       <Card className="p-4 space-y-3">
         <h3 className="font-bold">⚙️ Pengaturan Siaran</h3>
+
 
         <div>
           <label className="text-xs font-medium">Server Aktif</label>

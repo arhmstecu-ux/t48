@@ -218,7 +218,19 @@ const PaidLiveStream = () => {
   };
 
   useEffect(() => {
-    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+    if (!hasAccess) { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+
+    // RTMP server: use static m3u8 URL from settings, no token needed.
+    if (serverChoice === "rtmp") {
+      setIdnToken(""); setIdnInfo(null); setIdnError("");
+      const url = settings?.rtmp_url || "";
+      if (!url) { setIdnError("URL RTMP belum dikonfigurasi"); setM3u8Url(""); return; }
+      setM3u8Url(url);
+      return;
+    }
+
+    if (serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+
     let cancelled = false;
     let currentBlobUrl = "";
     const resolve = async () => {
@@ -255,7 +267,7 @@ const PaidLiveStream = () => {
       clearInterval(refresh);
       if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
     };
-  }, [hasAccess, serverChoice]);
+  }, [hasAccess, serverChoice, settings?.rtmp_url]);
 
   useEffect(() => {
     if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {

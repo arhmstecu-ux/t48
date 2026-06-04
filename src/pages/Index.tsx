@@ -140,7 +140,7 @@ const Index = () => {
               { to: '/announcements', icon: Megaphone, label: 'Pengumuman', color: 'text-warning', delay: 0.45 },
               { to: '/ranking', icon: Trophy, label: 'Ranking', color: 'text-success', delay: 0.5 },
               { to: '/playlist', icon: Sparkles, label: 'Playlist', color: 'text-warning', delay: 0.55 },
-              { to: '/live', icon: Radio, label: 'Live', color: 'text-destructive', delay: 0.6 },
+              { to: '/live-paid', icon: Radio, label: 'Live Premium', color: 'text-destructive', delay: 0.6 },
             ].map(item => (
               <motion.div key={item.to} initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: item.delay, type: 'spring', stiffness: 200 }}>
                 <Link to={item.to} className="glass-card rounded-2xl p-5 text-center block hover:scale-105 hover:-translate-y-1 transition-all duration-300">

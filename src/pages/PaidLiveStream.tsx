@@ -187,10 +187,11 @@ const PaidLiveStream = () => {
 
   // ART Player for IDN — auto-resolve live JKT48 IDN+ via GiStream edge function.
   const [m3u8Url, setM3u8Url] = useState<string>("");
+  const [idnToken, setIdnToken] = useState<string>("");
   const [idnInfo, setIdnInfo] = useState<{ slug?: string; title?: string } | null>(null);
   const [idnError, setIdnError] = useState<string>("");
   useEffect(() => {
-    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnInfo(null); setIdnError(""); return; }
+    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
     let cancelled = false;
     const resolve = async () => {
       try {
@@ -198,18 +199,19 @@ const PaidLiveStream = () => {
         if (cancelled) return;
         if (error || !data?.url) {
           setIdnError(data?.error || error?.message || "Tidak ada live IDN+ saat ini");
-          setM3u8Url("");
+          setM3u8Url(""); setIdnToken("");
           return;
         }
         setIdnError("");
         setIdnInfo({ slug: data.slug, title: data.title });
+        setIdnToken(data.token || "");
         setM3u8Url(data.url);
       } catch (e: any) {
-        if (!cancelled) { setIdnError(e?.message || "Gagal memuat stream"); setM3u8Url(""); }
+        if (!cancelled) { setIdnError(e?.message || "Gagal memuat stream"); setM3u8Url(""); setIdnToken(""); }
       }
     };
     resolve();
-    const refresh = setInterval(resolve, 4 * 60 * 1000); // refresh JWT every 4 min
+    const refresh = setInterval(resolve, 4 * 60 * 1000);
     return () => { cancelled = true; clearInterval(refresh); };
   }, [hasAccess, serverChoice]);
 
@@ -248,6 +250,9 @@ const PaidLiveStream = () => {
               fragLoadingMaxRetry: 6,
               manifestLoadingMaxRetry: 4,
               levelLoadingMaxRetry: 4,
+              xhrSetup: (xhr: XMLHttpRequest) => {
+                if (idnToken) xhr.setRequestHeader("x-api-token", idnToken);
+              },
             });
             hlsRef.current = hls;
             hls.loadSource(url); hls.attachMedia(video);
@@ -292,7 +297,7 @@ const PaidLiveStream = () => {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [hasAccess, isPreShow, serverChoice, m3u8Url]);
+  }, [hasAccess, isPreShow, serverChoice, m3u8Url, idnToken]);
 
   const setLevel = (lv: number) => {
     if (!hlsRef.current) return;

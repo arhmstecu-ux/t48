@@ -9,9 +9,10 @@ import PaidLineupManager from "./PaidLineupManager";
 
 interface Settings {
   id?: string;
-  active_server: "youtube" | "idn";
+  active_server: "youtube" | "idn" | "rtmp";
   youtube_url: string;
   m3u8_url: string;
+  rtmp_url: string;
   title: string;
   description: string;
   logo_url: string;
@@ -122,6 +123,7 @@ const PaidLivePanel = () => {
         active_server: s.active_server,
         youtube_url: s.youtube_url,
         m3u8_url: s.m3u8_url,
+        rtmp_url: s.rtmp_url,
         title: s.title,
         description: s.description,
         logo_url: s.logo_url,
@@ -223,7 +225,9 @@ const PaidLivePanel = () => {
             <Button size="sm" variant={s.active_server === "youtube" ? "default" : "outline"}
               onClick={() => setS({ ...s, active_server: "youtube" })} className="flex-1">YouTube</Button>
             <Button size="sm" variant={s.active_server === "idn" ? "default" : "outline"}
-              onClick={() => setS({ ...s, active_server: "idn" })} className="flex-1">IDN (M3U8)</Button>
+              onClick={() => setS({ ...s, active_server: "idn" })} className="flex-1">IDN (Auto)</Button>
+            <Button size="sm" variant={s.active_server === "rtmp" ? "default" : "outline"}
+              onClick={() => setS({ ...s, active_server: "rtmp" })} className="flex-1">RTMP</Button>
           </div>
         </div>
 
@@ -234,8 +238,14 @@ const PaidLivePanel = () => {
         </div>
 
         <div>
-          <label className="text-xs font-medium">URL M3U8 (server IDN)</label>
+          <label className="text-xs font-medium">URL M3U8 (server IDN - cadangan manual)</label>
           <Input value={s.m3u8_url} onChange={e => setS({ ...s, m3u8_url: e.target.value })}
+            placeholder="https://...m3u8" />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium">URL RTMP (M3U8 manual)</label>
+          <Input value={s.rtmp_url} onChange={e => setS({ ...s, rtmp_url: e.target.value })}
             placeholder="https://...m3u8" />
         </div>
 

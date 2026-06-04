@@ -10,9 +10,10 @@ import Artplayer from "artplayer";
 import Hls from "hls.js";
 
 interface Settings {
-  active_server: "youtube" | "idn";
+  active_server: "youtube" | "idn" | "rtmp";
   youtube_url: string;
   m3u8_url?: string;
+  rtmp_url?: string;
   title: string;
   description: string;
   logo_url: string;
@@ -65,7 +66,7 @@ const PaidLiveStream = () => {
   const [accessMode, setAccessMode] = useState<"email" | "token" | "owner" | null>(null);
   const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [serverChoice, setServerChoice] = useState<"youtube" | "idn">("youtube");
+  const [serverChoice, setServerChoice] = useState<"youtube" | "idn" | "rtmp">("youtube");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -217,7 +218,19 @@ const PaidLiveStream = () => {
   };
 
   useEffect(() => {
-    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+    if (!hasAccess) { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+
+    // RTMP server: use static m3u8 URL from settings, no token needed.
+    if (serverChoice === "rtmp") {
+      setIdnToken(""); setIdnInfo(null); setIdnError("");
+      const url = settings?.rtmp_url || "";
+      if (!url) { setIdnError("URL RTMP belum dikonfigurasi"); setM3u8Url(""); return; }
+      setM3u8Url(url);
+      return;
+    }
+
+    if (serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
+
     let cancelled = false;
     let currentBlobUrl = "";
     const resolve = async () => {
@@ -254,10 +267,10 @@ const PaidLiveStream = () => {
       clearInterval(refresh);
       if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
     };
-  }, [hasAccess, serverChoice]);
+  }, [hasAccess, serverChoice, settings?.rtmp_url]);
 
   useEffect(() => {
-    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {
+    if (!hasAccess || isPreShow || (serverChoice !== "idn" && serverChoice !== "rtmp") || !playerRef.current || !m3u8Url) {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       setLevels([]);
@@ -537,6 +550,12 @@ const PaidLiveStream = () => {
               }`}>
               <Server className="w-3.5 h-3.5" /> Server IDN
             </button>
+            <button onClick={() => setServerChoice("rtmp")}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                serverChoice === "rtmp" ? "gradient-primary text-primary-foreground shadow-lg" : "glass-card text-muted-foreground"
+              }`}>
+              <Server className="w-3.5 h-3.5" /> Server RTMP
+            </button>
           </div>
         )}
 
@@ -576,12 +595,14 @@ const PaidLiveStream = () => {
                   <>
                     <div className="text-2xl">📡</div>
                     <div>{idnError}</div>
-                    <div className="text-[10px] text-white/40">Mencari live IDN+ otomatis...</div>
+                    <div className="text-[10px] text-white/40">
+                      {serverChoice === "rtmp" ? "Owner belum mengatur URL RTMP" : "Mencari live IDN+ otomatis..."}
+                    </div>
                   </>
                 ) : (
                   <>
                     <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-white rounded-full" />
-                    <div className="text-xs">Memuat stream IDN+...</div>
+                    <div className="text-xs">Memuat stream {serverChoice === "rtmp" ? "RTMP" : "IDN+"}...</div>
                   </>
                 )}
               </div>
@@ -590,7 +611,7 @@ const PaidLiveStream = () => {
         )}
 
         {/* Quality controls (IDN only) */}
-        {!isPreShow && serverChoice === "idn" && levels.length > 0 && (
+        {!isPreShow && (serverChoice === "idn" || serverChoice === "rtmp") && levels.length > 0 && (
           <div className="glass-card rounded-2xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold">🎚️ Kualitas</span>

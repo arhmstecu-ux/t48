@@ -341,6 +341,7 @@ export type Database = {
           is_live: boolean
           logo_url: string
           m3u8_url: string
+          rtmp_url: string
           start_time: string | null
           title: string
           updated_at: string
@@ -354,6 +355,7 @@ export type Database = {
           is_live?: boolean
           logo_url?: string
           m3u8_url?: string
+          rtmp_url?: string
           start_time?: string | null
           title?: string
           updated_at?: string
@@ -367,6 +369,7 @@ export type Database = {
           is_live?: boolean
           logo_url?: string
           m3u8_url?: string
+          rtmp_url?: string
           start_time?: string | null
           title?: string
           updated_at?: string
@@ -724,6 +727,7 @@ export type Database = {
           id: string
           is_live: boolean
           logo_url: string
+          rtmp_url: string
           start_time: string
           title: string
           updated_at: string

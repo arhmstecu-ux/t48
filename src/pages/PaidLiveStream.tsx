@@ -478,10 +478,26 @@ const PaidLiveStream = () => {
               <>
                 <div ref={playerRef} className="w-full h-full" />
                 <MovingWatermark code={watermarkCode} />
+                {idnInfo?.title && (
+                  <div className="absolute top-2 left-2 z-20 px-2 py-1 rounded bg-black/60 backdrop-blur text-white text-[10px] font-bold">
+                    🔴 {idnInfo.title}
+                  </div>
+                )}
               </>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
-                Server IDN belum dikonfigurasi
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 text-sm gap-2 px-4 text-center">
+                {idnError ? (
+                  <>
+                    <div className="text-2xl">📡</div>
+                    <div>{idnError}</div>
+                    <div className="text-[10px] text-white/40">Mencari live IDN+ otomatis...</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-white rounded-full" />
+                    <div className="text-xs">Memuat stream IDN+...</div>
+                  </>
+                )}
               </div>
             )}
           </div>

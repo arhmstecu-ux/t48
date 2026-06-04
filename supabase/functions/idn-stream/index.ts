@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       url,
       slug,
+      token,
       title: live.title || live.name || "",
       image: live.image || live.thumbnail || "",
       qualities: streams.map((s: any, i: number) => ({

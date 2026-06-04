@@ -131,6 +131,7 @@ const PaidLivePanel = () => {
         background_url: s.background_url,
         start_time: s.start_time,
         is_live: s.is_live,
+        public_access: s.public_access,
         updated_at: new Date().toISOString(),
       })
       .eq("id", s.id!);

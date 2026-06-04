@@ -595,12 +595,14 @@ const PaidLiveStream = () => {
                   <>
                     <div className="text-2xl">📡</div>
                     <div>{idnError}</div>
-                    <div className="text-[10px] text-white/40">Mencari live IDN+ otomatis...</div>
+                    <div className="text-[10px] text-white/40">
+                      {serverChoice === "rtmp" ? "Owner belum mengatur URL RTMP" : "Mencari live IDN+ otomatis..."}
+                    </div>
                   </>
                 ) : (
                   <>
                     <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-white rounded-full" />
-                    <div className="text-xs">Memuat stream IDN+...</div>
+                    <div className="text-xs">Memuat stream {serverChoice === "rtmp" ? "RTMP" : "IDN+"}...</div>
                   </>
                 )}
               </div>

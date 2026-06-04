@@ -270,7 +270,7 @@ const PaidLiveStream = () => {
   }, [hasAccess, serverChoice, settings?.rtmp_url]);
 
   useEffect(() => {
-    if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {
+    if (!hasAccess || isPreShow || (serverChoice !== "idn" && serverChoice !== "rtmp") || !playerRef.current || !m3u8Url) {
       if (artRef.current) { artRef.current.destroy(false); artRef.current = null; }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       setLevels([]);

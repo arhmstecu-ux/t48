@@ -278,19 +278,38 @@ const PaidLiveStream = () => {
         m3u8: (video: HTMLVideoElement, url: string) => {
           if (Hls.isSupported()) {
             const hls = new Hls({
-              // Live-tuned, low buffering, anti-stall
-              lowLatencyMode: true,
-              backBufferLength: 30,
-              maxBufferLength: 20,
-              maxMaxBufferLength: 40,
-              liveSyncDurationCount: 3,
-              liveMaxLatencyDurationCount: 8,
+              // Tuned for smooth playback (less re-buffering). LL-HLS off — origin
+              // is standard HLS, LL mode caused frequent stalls.
+              lowLatencyMode: false,
+              backBufferLength: 60,
+              maxBufferLength: 60,
+              maxMaxBufferLength: 120,
+              maxBufferSize: 120 * 1000 * 1000, // 120 MB
+              maxBufferHole: 0.5,
+              highBufferWatchdogPeriod: 2,
+              nudgeOffset: 0.2,
+              nudgeMaxRetry: 10,
+              liveSyncDurationCount: 4,
+              liveMaxLatencyDurationCount: 12,
+              liveDurationInfinity: true,
               enableWorker: true,
               startLevel: -1,
-              abrEwmaDefaultEstimate: 1_000_000,
-              fragLoadingMaxRetry: 6,
-              manifestLoadingMaxRetry: 4,
-              levelLoadingMaxRetry: 4,
+              // ABR: be a bit conservative to avoid up-switching into stalls
+              abrEwmaDefaultEstimate: 800_000,
+              abrBandWidthFactor: 0.9,
+              abrBandWidthUpFactor: 0.65,
+              abrEwmaFastLive: 3,
+              abrEwmaSlowLive: 9,
+              // Retries — keep loading on flaky segments
+              fragLoadingMaxRetry: 8,
+              fragLoadingRetryDelay: 500,
+              fragLoadingMaxRetryTimeout: 20000,
+              manifestLoadingMaxRetry: 6,
+              manifestLoadingRetryDelay: 500,
+              manifestLoadingMaxRetryTimeout: 20000,
+              levelLoadingMaxRetry: 6,
+              levelLoadingRetryDelay: 500,
+              levelLoadingMaxRetryTimeout: 20000,
               xhrSetup: (xhr: XMLHttpRequest) => {
                 if (idnToken) xhr.setRequestHeader("x-api-token", idnToken);
               },
@@ -312,6 +331,27 @@ const PaidLiveStream = () => {
                   default: hls.destroy();
                 }
               }
+            });
+            // Anti-stall: if playback stalls > 3s while live, jump to live edge.
+            let stallTimer: any = null;
+            const onWaiting = () => {
+              clearTimeout(stallTimer);
+              stallTimer = setTimeout(() => {
+                try {
+                  if (hls.liveSyncPosition && Math.abs(video.currentTime - hls.liveSyncPosition) > 6) {
+                    video.currentTime = hls.liveSyncPosition;
+                  }
+                  video.play().catch(() => {});
+                } catch {}
+              }, 3000);
+            };
+            const onPlaying = () => clearTimeout(stallTimer);
+            video.addEventListener("waiting", onWaiting);
+            video.addEventListener("playing", onPlaying);
+            art.on("destroy", () => {
+              clearTimeout(stallTimer);
+              video.removeEventListener("waiting", onWaiting);
+              video.removeEventListener("playing", onPlaying);
             });
           } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
             video.src = url;

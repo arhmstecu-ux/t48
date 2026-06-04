@@ -611,7 +611,7 @@ const PaidLiveStream = () => {
         )}
 
         {/* Quality controls (IDN only) */}
-        {!isPreShow && serverChoice === "idn" && levels.length > 0 && (
+        {!isPreShow && (serverChoice === "idn" || serverChoice === "rtmp") && levels.length > 0 && (
           <div className="glass-card rounded-2xl p-3 mb-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold">🎚️ Kualitas</span>

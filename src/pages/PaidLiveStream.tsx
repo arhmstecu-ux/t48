@@ -66,7 +66,7 @@ const PaidLiveStream = () => {
   const [accessMode, setAccessMode] = useState<"email" | "token" | "owner" | null>(null);
   const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [serverChoice, setServerChoice] = useState<"youtube" | "idn">("youtube");
+  const [serverChoice, setServerChoice] = useState<"youtube" | "idn" | "rtmp">("youtube");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);

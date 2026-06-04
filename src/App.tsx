@@ -20,8 +20,6 @@ const ReplayShow = lazy(() => import("./pages/ReplayShow"));
 const Announcements = lazy(() => import("./pages/Announcements"));
 const Ranking = lazy(() => import("./pages/Ranking"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-const GroupChat = lazy(() => import("./pages/GroupChat"));
-const LiveStream = lazy(() => import("./pages/LiveStream"));
 const PaidLiveStream = lazy(() => import("./pages/PaidLiveStream"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));

@@ -190,14 +190,41 @@ const PaidLiveStream = () => {
   const [idnToken, setIdnToken] = useState<string>("");
   const [idnInfo, setIdnInfo] = useState<{ slug?: string; title?: string } | null>(null);
   const [idnError, setIdnError] = useState<string>("");
+
+  // Build a synthetic HLS master playlist from quality variants so the player
+  // exposes all renditions (160p/360p/480p/720p60/1080p60) instead of a single level.
+  const buildMasterPlaylist = (qualities: Array<{ name: string; url: string; bandwidth: number }>) => {
+    const resMap: Record<string, { w: number; h: number; fps: number }> = {
+      "160p": { w: 284, h: 160, fps: 30 },
+      "360p": { w: 640, h: 360, fps: 30 },
+      "480p": { w: 854, h: 480, fps: 30 },
+      "720p": { w: 1280, h: 720, fps: 30 },
+      "720p60": { w: 1280, h: 720, fps: 60 },
+      "1080p": { w: 1920, h: 1080, fps: 30 },
+      "1080p60": { w: 1920, h: 1080, fps: 60 },
+    };
+    const lines = ["#EXTM3U", "#EXT-X-VERSION:3"];
+    for (const q of qualities) {
+      if (!q.url) continue;
+      const r = resMap[q.name] || { w: 1280, h: 720, fps: 30 };
+      const bw = q.bandwidth && q.bandwidth > 0 ? q.bandwidth : Math.max(300_000, r.h * 5000);
+      lines.push(
+        `#EXT-X-STREAM-INF:BANDWIDTH=${bw},RESOLUTION=${r.w}x${r.h},FRAME-RATE=${r.fps.toFixed(3)},CODECS="avc1.4D401F,mp4a.40.2",NAME="${q.name}"`
+      );
+      lines.push(q.url);
+    }
+    return lines.join("\n");
+  };
+
   useEffect(() => {
     if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnToken(""); setIdnInfo(null); setIdnError(""); return; }
     let cancelled = false;
+    let currentBlobUrl = "";
     const resolve = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('idn-stream');
         if (cancelled) return;
-        if (error || !data?.url) {
+        if (error || (!data?.url && !data?.qualities?.length)) {
           setIdnError(data?.error || error?.message || "Tidak ada live IDN+ saat ini");
           setM3u8Url(""); setIdnToken("");
           return;
@@ -205,14 +232,28 @@ const PaidLiveStream = () => {
         setIdnError("");
         setIdnInfo({ slug: data.slug, title: data.title });
         setIdnToken(data.token || "");
-        setM3u8Url(data.url);
+        const qs = Array.isArray(data.qualities) ? data.qualities : [];
+        if (qs.length > 1) {
+          const master = buildMasterPlaylist(qs);
+          const blob = new Blob([master], { type: "application/vnd.apple.mpegurl" });
+          const burl = URL.createObjectURL(blob);
+          if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+          currentBlobUrl = burl;
+          setM3u8Url(burl);
+        } else {
+          setM3u8Url(data.url);
+        }
       } catch (e: any) {
         if (!cancelled) { setIdnError(e?.message || "Gagal memuat stream"); setM3u8Url(""); setIdnToken(""); }
       }
     };
     resolve();
     const refresh = setInterval(resolve, 4 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(refresh); };
+    return () => {
+      cancelled = true;
+      clearInterval(refresh);
+      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    };
   }, [hasAccess, serverChoice]);
 
   useEffect(() => {

@@ -88,7 +88,7 @@ const PaidLivePanel = () => {
   useEffect(() => {
     load();
     const ch = supabase.channel("owner-paidlive-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_pulse" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => loadPremium())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

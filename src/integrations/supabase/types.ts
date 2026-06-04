@@ -332,6 +332,21 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_livestream_pulse: {
+        Row: {
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       paid_livestream_settings: {
         Row: {
           active_server: string

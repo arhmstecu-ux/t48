@@ -130,14 +130,16 @@ const PaidLiveStream = () => {
       setLoading(false);
     };
     load();
-    const ch = supabase.channel("paid-stream-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_settings" },
-        (p: any) => {
-          if (!p.new) return;
-          setSettings(p.new as any);
-          // Re-evaluate access live when admin toggles public_access
+    // Subscribe to pulse table (no sensitive data) and refetch via secure RPC on change
+    const ch = supabase.channel("paid-stream-pulse")
+      .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_pulse" },
+        async () => {
+          const { data: sRaw } = await supabase.rpc('get_paid_livestream_public' as any);
+          const s = Array.isArray(sRaw) ? sRaw[0] : sRaw;
+          if (!s) return;
+          setSettings(s as any);
           if (!isOwner) {
-            if (p.new.public_access) {
+            if ((s as any).public_access) {
               setHasAccess(true); setAccessMode("email"); setAccessExpiry(null); setAccessError("");
             } else if (isPremium) {
               setHasAccess(true); setAccessMode("email"); setAccessExpiry((profile as any)?.premium_until || null); setAccessError("");

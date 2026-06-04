@@ -185,14 +185,33 @@ const PaidLiveStream = () => {
 
   const isPreShow = countdown !== null && !settings?.is_live;
 
-  // ART Player for IDN — fetches m3u8 via secure RPC (not exposed in settings)
+  // ART Player for IDN — auto-resolve live JKT48 IDN+ via GiStream edge function.
   const [m3u8Url, setM3u8Url] = useState<string>("");
+  const [idnInfo, setIdnInfo] = useState<{ slug?: string; title?: string } | null>(null);
+  const [idnError, setIdnError] = useState<string>("");
   useEffect(() => {
-    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); return; }
-    supabase.rpc('get_paid_m3u8_url' as any, { _token: tokenCode || null }).then(({ data }) => {
-      if (typeof data === 'string') setM3u8Url(data);
-    });
-  }, [hasAccess, serverChoice, tokenCode]);
+    if (!hasAccess || serverChoice !== "idn") { setM3u8Url(""); setIdnInfo(null); setIdnError(""); return; }
+    let cancelled = false;
+    const resolve = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('idn-stream');
+        if (cancelled) return;
+        if (error || !data?.url) {
+          setIdnError(data?.error || error?.message || "Tidak ada live IDN+ saat ini");
+          setM3u8Url("");
+          return;
+        }
+        setIdnError("");
+        setIdnInfo({ slug: data.slug, title: data.title });
+        setM3u8Url(data.url);
+      } catch (e: any) {
+        if (!cancelled) { setIdnError(e?.message || "Gagal memuat stream"); setM3u8Url(""); }
+      }
+    };
+    resolve();
+    const refresh = setInterval(resolve, 4 * 60 * 1000); // refresh JWT every 4 min
+    return () => { cancelled = true; clearInterval(refresh); };
+  }, [hasAccess, serverChoice]);
 
   useEffect(() => {
     if (!hasAccess || isPreShow || serverChoice !== "idn" || !playerRef.current || !m3u8Url) {

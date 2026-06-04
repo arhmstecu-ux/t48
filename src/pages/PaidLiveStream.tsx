@@ -10,9 +10,10 @@ import Artplayer from "artplayer";
 import Hls from "hls.js";
 
 interface Settings {
-  active_server: "youtube" | "idn";
+  active_server: "youtube" | "idn" | "rtmp";
   youtube_url: string;
   m3u8_url?: string;
+  rtmp_url?: string;
   title: string;
   description: string;
   logo_url: string;

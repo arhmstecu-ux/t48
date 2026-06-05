@@ -103,14 +103,20 @@ Deno.serve(async (req) => {
     }
     const token = tokJson.data.token;
 
-    // 4) Get stream URL via CTV (slug required)
-    if (!slug) {
-      return new Response(JSON.stringify({ error: "Slug tidak tersedia untuk CTV stream" }),
+    // 4) Get stream URL via CTV — gunakan identifier yang sama dengan token (showId bila ada, else slug)
+    const ctvHeaders: Record<string, string> = { "x-api-token": token };
+    let ctvQuery = "";
+    if (showId) {
+      ctvHeaders["x-showid"] = showId;
+      ctvQuery = `showId=${encodeURIComponent(showId)}`;
+    } else if (slug) {
+      ctvHeaders["x-slug"] = slug;
+      ctvQuery = `slug=${encodeURIComponent(slug)}`;
+    } else {
+      return new Response(JSON.stringify({ error: "Tidak ada slug/showId" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const sRes = await fetch(`${CTV_BASE}/stream?slug=${encodeURIComponent(slug)}`, {
-      headers: { "x-api-token": token, "x-slug": slug },
-    });
+    const sRes = await fetch(`${CTV_BASE}/stream?${ctvQuery}`, { headers: ctvHeaders });
     const sJson = await sRes.json();
     if (!sJson?.success) {
       return new Response(JSON.stringify({ error: sJson?.message || "Stream URL gagal" }),

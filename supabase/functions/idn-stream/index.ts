@@ -14,7 +14,7 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const LIVE_API = "https://v5.jkt48connect.com/api/jkt48/live?apikey=JKTCONNECT";
-const TOKEN_API = "https://v2.jkt48connect.com/api/token/generate?apikey=JKTCONNECT";
+const TOKEN_API = "https://v5.jkt48connect.com/api/token/generate?apikey=JKTCONNECT";
 const SIGNING_PATH = "/api/token/generate?apikey=JKTCONNECT";
 const CTV_BASE = "https://ctv.jkt48connect.com";
 const PARTNER_KID = "jkt48connect-v1";

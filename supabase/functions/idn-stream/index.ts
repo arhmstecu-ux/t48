@@ -103,31 +103,25 @@ Deno.serve(async (req) => {
     }
     const token = tokJson.data.token;
 
-    // 4) Get stream URL via CTV — pass slug if we have it (CTV stream endpoint uses slug)
-    let url = "";
-    let qualities: any[] = [];
-    if (slug) {
-      const sRes = await fetch(`${CTV_BASE}/stream?slug=${encodeURIComponent(slug)}`, {
-        headers: { "x-api-token": token, "x-slug": slug },
-      });
-      const sJson = await sRes.json();
-      if (sJson?.success) {
-        const streams = sJson.streams || [];
-        url = streams[0]?.url || "";
-        qualities = streams.map((s: any, i: number) => ({
-          index: i, name: s.NAME || `${s.RESOLUTION?.split("x")[1] || "?"}p`,
-          url: s.url, resolution: s.RESOLUTION || "", bandwidth: parseInt(s.BANDWIDTH) || 0,
-        }));
-      }
+    // 4) Get stream URL via CTV (slug required)
+    if (!slug) {
+      return new Response(JSON.stringify({ error: "Slug tidak tersedia untuk CTV stream" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    // Fallback: use streaming_url_list from live API directly if CTV didn't return
-    if (!url && Array.isArray(live?.streaming_url_list) && live.streaming_url_list.length > 0) {
-      url = live.streaming_url_list[0].url || "";
-      qualities = live.streaming_url_list.map((s: any, i: number) => ({
-        index: i, name: s.label || `q${s.quality ?? i}`, url: s.url, resolution: "", bandwidth: 0,
-      }));
+    const sRes = await fetch(`${CTV_BASE}/stream?slug=${encodeURIComponent(slug)}`, {
+      headers: { "x-api-token": token, "x-slug": slug },
+    });
+    const sJson = await sRes.json();
+    if (!sJson?.success) {
+      return new Response(JSON.stringify({ error: sJson?.message || "Stream URL gagal" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const streams = sJson.streams || [];
+    const url = streams[0]?.url || "";
+    const qualities = streams.map((s: any, i: number) => ({
+      index: i, name: s.NAME || `${s.RESOLUTION?.split("x")[1] || "?"}p`,
+      url: s.url, resolution: s.RESOLUTION || "", bandwidth: parseInt(s.BANDWIDTH) || 0,
+    }));
 
     if (!url) {
       return new Response(JSON.stringify({ error: "Stream URL kosong" }),

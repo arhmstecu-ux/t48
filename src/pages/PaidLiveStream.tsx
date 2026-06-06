@@ -299,7 +299,9 @@ const PaidLiveStream = () => {
     let currentBlobUrl = "";
     const resolve = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('idn-stream');
+        const fp = localStorage.getItem("t48_dev_fp") || "";
+        const invokeOpts: any = hasLinkParam ? { body: { link: tokenParam, fp } } : {};
+        const { data, error } = await supabase.functions.invoke('idn-stream', invokeOpts);
         if (cancelled) return;
         if (error || (!data?.url && !data?.qualities?.length)) {
           setIdnError(data?.error || error?.message || "Tidak ada live IDN+ saat ini");

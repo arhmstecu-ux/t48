@@ -508,7 +508,7 @@ const PaidLiveStream = () => {
   const userCode = (profile as any)?.profile_code;
   const watermarkCode = accessMode === "token" ? tokenCode || undefined : userCode;
 
-  if (!user && !tokenParam) return null;
+  if (!user && !hasLinkParam) return null;
 
   if (loading) {
     return (

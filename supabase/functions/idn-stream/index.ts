@@ -32,6 +32,24 @@ async function hmacSHA256Hex(secret: string, msg: string) {
 }
 
 async function checkAccess(req: Request): Promise<boolean> {
+  // Path 1: watch-link token (anon-friendly). Validate against DB.
+  const url = new URL(req.url);
+  let linkToken = url.searchParams.get("link") || "";
+  let fp = url.searchParams.get("fp") || "";
+  if (!linkToken || !fp) {
+    try {
+      const body = await req.clone().json();
+      linkToken = linkToken || body?.link || "";
+      fp = fp || body?.fp || "";
+    } catch { /* ignore */ }
+  }
+  if (linkToken && fp) {
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const { data } = await admin.rpc("validate_and_claim_link" as any, { _token: linkToken, _fingerprint: fp });
+    if ((data as any)?.valid) return true;
+  }
+
+  // Path 2: logged-in premium/admin
   const auth = req.headers.get("Authorization");
   if (!auth) return false;
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -47,6 +65,9 @@ async function checkAccess(req: Request): Promise<boolean> {
   ]);
   if (roles?.some((r: any) => r.role === "admin")) return true;
   if (prof?.premium_until && new Date(prof.premium_until).getTime() > Date.now()) return true;
+  // Also accept anyone with public_access ON
+  const { data: settings } = await admin.from("paid_livestream_settings").select("public_access").limit(1).maybeSingle();
+  if ((settings as any)?.public_access) return true;
   return false;
 }
 
@@ -59,6 +80,7 @@ Deno.serve(async (req) => {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // 1) Find a live show from the new live endpoint
     const liveRes = await fetch(LIVE_API);

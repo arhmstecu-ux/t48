@@ -85,19 +85,55 @@ const PaidLiveStream = () => {
   const hlsRef = useRef<Hls | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Token-only mode (no login required)
-  const isTokenMode = !!tokenParam && !user;
+  // Link-token mode: works for both guest and logged-in users
+  const hasLinkParam = !!tokenParam;
 
   const premiumUntil = (profile as any)?.premium_until ? new Date((profile as any).premium_until) : null;
   const isPremium = !!premiumUntil && premiumUntil.getTime() > Date.now();
 
+  // Only redirect to login when NO link token is present
   useEffect(() => {
-    if (!user) navigate("/login");
-  }, [user, navigate]);
+    if (!user && !hasLinkParam) navigate("/login");
+  }, [user, hasLinkParam, navigate]);
 
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
 
-  // Load settings + access
+  // Stable device fingerprint for single-use link binding
+  const getFingerprint = () => {
+    let fp = localStorage.getItem("t48_dev_fp");
+    if (!fp) {
+      fp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem("t48_dev_fp", fp);
+    }
+    return fp;
+  };
+
+  // Resolve link-token access (parallel with settings)
+  const [linkValid, setLinkValid] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!hasLinkParam) { setLinkValid(null); return; }
+    let cancelled = false;
+    (async () => {
+      const fp = getFingerprint();
+      const { data, error } = await supabase.rpc("validate_and_claim_link" as any, { _token: tokenParam, _fingerprint: fp });
+      if (cancelled) return;
+      const r: any = data;
+      if (error || !r?.valid) {
+        setLinkValid(false);
+        setAccessError(r?.error || error?.message || "Link tidak valid");
+        setHasAccess(false);
+      } else {
+        setLinkValid(true);
+        setAccessMode("token");
+        setTokenCode(r.suffix);
+        setAccessExpiry(r.expires_at);
+        setHasAccess(true);
+        setAccessError("");
+      }
+    })();
+  }, [tokenParam, hasLinkParam]);
+
+  // Load settings + access (only when NOT in link-token mode, or run in parallel)
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -116,6 +152,9 @@ const PaidLiveStream = () => {
         if (ps) setModIds(new Set(ps.map((p: any) => p.user_id)));
       }
 
+      // Skip standard access resolution if we're using a link token — handled separately
+      if (hasLinkParam) { setLoading(false); return; }
+
       // Resolve access: owner > public_access > premium membership
       if (isOwner) {
         setHasAccess(true); setAccessMode("owner"); setAccessError("");
@@ -130,7 +169,6 @@ const PaidLiveStream = () => {
       setLoading(false);
     };
     load();
-    // Subscribe to pulse table (no sensitive data) and refetch via secure RPC on change
     const ch = supabase.channel("paid-stream-pulse")
       .on("postgres_changes", { event: "*", schema: "public", table: "paid_livestream_pulse" },
         async () => {
@@ -138,6 +176,7 @@ const PaidLiveStream = () => {
           const s = Array.isArray(sRaw) ? sRaw[0] : sRaw;
           if (!s) return;
           setSettings(s as any);
+          if (hasLinkParam) return;
           if (!isOwner) {
             if ((s as any).public_access) {
               setHasAccess(true); setAccessMode("email"); setAccessExpiry(null); setAccessError("");
@@ -151,7 +190,13 @@ const PaidLiveStream = () => {
         })
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
-  }, [user?.id, isOwner, isPremium, (profile as any)?.premium_until]);
+  }, [user?.id, isOwner, isPremium, (profile as any)?.premium_until, hasLinkParam]);
+
+  // When link validation finishes, ensure loading is false
+  useEffect(() => {
+    if (hasLinkParam && linkValid !== null) setLoading(false);
+  }, [hasLinkParam, linkValid]);
+
 
 
   // Chat realtime (only for logged-in users)
@@ -254,7 +299,9 @@ const PaidLiveStream = () => {
     let currentBlobUrl = "";
     const resolve = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('idn-stream');
+        const fp = localStorage.getItem("t48_dev_fp") || "";
+        const invokeOpts: any = hasLinkParam ? { body: { link: tokenParam, fp } } : {};
+        const { data, error } = await supabase.functions.invoke('idn-stream', invokeOpts);
         if (cancelled) return;
         if (error || (!data?.url && !data?.qualities?.length)) {
           setIdnError(data?.error || error?.message || "Tidak ada live IDN+ saat ini");
@@ -463,7 +510,7 @@ const PaidLiveStream = () => {
   const userCode = (profile as any)?.profile_code;
   const watermarkCode = accessMode === "token" ? tokenCode || undefined : userCode;
 
-  if (!user && !tokenParam) return null;
+  if (!user && !hasLinkParam) return null;
 
   if (loading) {
     return (

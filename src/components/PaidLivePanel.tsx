@@ -350,6 +350,7 @@ const PaidLivePanel = () => {
         </Button>
       </Card>
 
+      <PaidLinkManager />
       <PaidLineupManager />
     </div>
   );

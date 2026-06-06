@@ -332,6 +332,74 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_livestream_link_claims: {
+        Row: {
+          claimed_at: string
+          fingerprint: string
+          id: string
+          link_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          fingerprint: string
+          id?: string
+          link_id: string
+        }
+        Update: {
+          claimed_at?: string
+          fingerprint?: string
+          id?: string
+          link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paid_livestream_link_claims_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "paid_livestream_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paid_livestream_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          label: string | null
+          link_type: string
+          max_uses: number
+          revoked: boolean
+          token: string
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          label?: string | null
+          link_type: string
+          max_uses?: number
+          revoked?: boolean
+          token: string
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          label?: string | null
+          link_type?: string
+          max_uses?: number
+          revoked?: boolean
+          token?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       paid_livestream_pulse: {
         Row: {
           id: number
@@ -729,6 +797,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_paid_link: {
+        Args: { _label?: string; _max: number; _type: string }
+        Returns: Json
+      }
       get_my_contact: {
         Args: never
         Returns: {
@@ -794,6 +866,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_paid_links: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          label: string
+          link_type: string
+          max_uses: number
+          revoked: boolean
+          token: string
+          used_count: number
+        }[]
+      }
       list_premium_users: {
         Args: never
         Returns: {
@@ -824,6 +910,10 @@ export type Database = {
         }[]
       }
       revoke_premium_by_code: { Args: { _code: string }; Returns: Json }
+      validate_and_claim_link: {
+        Args: { _fingerprint: string; _token: string }
+        Returns: Json
+      }
       validate_paid_token: {
         Args: { _token: string }
         Returns: {
